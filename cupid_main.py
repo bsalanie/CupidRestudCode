@@ -27,9 +27,9 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 results_dir = root_dir + "Results/"
 
 do_CS_homo = False
-do_CS_hetero = True
+do_CS_hetero = False
 do_CS_heteroxy = False
-do_maxi_fcmnl = False
+do_maxi_fcmnl = True
 do_fixed_fcmnl = False
 
 # first, read the data
@@ -208,8 +208,8 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
             pars_b_women_init = np.full(2, 0.2)
             make_b = make_b7
         elif b_case == 8:  # # orders (2,2)
-            pars_b_men_init = np.full(2, 0.2)
-            pars_b_women_init = np.full(2, 0.2)
+            pars_b_men_init = np.full(2, 0.1)
+            pars_b_women_init = np.full(2, 0.1)
             make_b = make_b8
         else:
             bs_error_abort(f"No such thing as b_case={b_case}")
@@ -225,8 +225,6 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
         #                         25, 27, 29, 31, 33]
 
         pars_b_init = np.concatenate((pars_b_men_init, pars_b_women_init))
-
-        pars_b_init = np.random.uniform(size=n_pars_b)
 
         # FCMNL default parameters
         sigma = 0.5
@@ -251,7 +249,6 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
                                              bases_surplus=phibases,
                                              mus_and_maybe_grad=mus_fcmnl_and_maybe_grad_agd,
                                              make_b=make_b,
-                                             tol_agd=1e-7,
                                              n_pars_b_men=n_pars_b_men,
                                              n_pars_b_women=n_pars_b_women)
 
@@ -259,8 +256,8 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
         if do_maxi_fcmnl:
             loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, x_init,
                                                                           lower=lower, upper=upper,
-                                                                          checkgrad=False,
-                                                                          verbose=False)
+                                                                          checkgrad=True,
+                                                                          verbose=True)
             print_stars(f"Return status: {status_fcmnl}")
 
             analyze_results(fcmnl_params_norm, estimates_fcmnl, sumw2,
