@@ -5,11 +5,13 @@ estimate a model
 import numpy as np
 from typing import List, Optional, Union, Tuple, Dict
 
+from knitro.numpy.knitroNumPy import *
+
 from cupid_classes import CupidParams, CupidParamsCSHeteroxy, CupidParamsFcmnl
 from cupid_utils import print_stars, GRADIENT_STEP, bs_error_abort
 from cupid_optim_utils import print_optimization_results, minimize_some_fixed
 
-from log_likelihood import log_mus, grad_log_mus
+from log_likelihood import log_likelihood, grad_log_likelihood 
 
 
 def maximize_loglik(model_params: Union[CupidParams, CupidParamsCSHeteroxy, CupidParamsFcmnl],
@@ -70,12 +72,12 @@ def maximize_loglik(model_params: Union[CupidParams, CupidParamsCSHeteroxy, Cupi
         assert fixed_vals is not None
         KN_set_var_fxbnds(kc, fixed_vars, fixed_vals)
 
-    cb = KN_add_eval_callback(kc, evalObj=True, funcCallback=log_mus)
+    cb = KN_add_eval_callback(kc, evalObj=True, funcCallback=log_likelihood)
 
     KN_set_cb_user_params(kc, cb, model_params)
 
     KN_set_cb_grad(kc, cb, objGradIndexVars=KN_DENSE,
-                   gradCallback=grad_log_mus)
+                   gradCallback=grad_log_likelihood)
 
     KN_set_int_param(kc, KN_PARAM_OUTLEV, KN_OUTLEV_ALL)
 
@@ -107,12 +109,12 @@ def maximize_loglik(model_params: Union[CupidParams, CupidParamsCSHeteroxy, Cupi
 #     :return: the values of the log-likelihood
 #     """
 #     if x_values.ndim == 1:
-#         return -log_mus(x_values, [model_params])
+#         return -log_likelihood(x_values, [model_params])
 #     elif x_values.ndim == 2:
 #         m = x_values.shape[0]
 #         ll_values = np.zeros(m)
 #         for i in range(m):
-#             ll_values[i] = -log_mus(x_values[i], [model_params])
+#             ll_values[i] = -log_likelihood(x_values[i], [model_params])
 #         return ll_values
 #     else:
 #         bs_error_abort(

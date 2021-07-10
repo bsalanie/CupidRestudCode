@@ -13,7 +13,7 @@ from read_inputs import read_inputs
 
 from ipfp_solvers import ipfp_homo_solver, ipfp_hetero_solver, ipfp_heteroxy_solver
 
-from estimate_model import maximize_loglik, evaluate_loglik
+from estimate_model import maximize_loglik
 from analyse_results import analyze_results
 
 from solve_for_mus import mus_choosiow_and_maybe_grad, \
@@ -27,10 +27,9 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 results_dir = root_dir + "Results/"
 
 do_CS_homo = False
-do_CS_hetero = False
+do_CS_hetero = True
 do_CS_heteroxy = False
-do_maxi_fcmnl = True
-do_eval_fcmnl = False
+do_maxi_fcmnl = False
 do_fixed_fcmnl = False
 
 # first, read the data
@@ -106,8 +105,8 @@ if do_CS_hetero:
     print_stars(f"Return status: {status_hetero}")
 
     analyze_results(cs_hetero_params_norm, estimates_hetero,
-                    sumw2, "CS_gender_heteroskedastic",
-                    results_dir=results_dir)
+                    sumw2, str_model="CS_gender_heteroskedastic",
+                    results_dir=results_dir, save=True)
 
 if do_CS_heteroxy:
 
@@ -169,7 +168,7 @@ if do_CS_heteroxy:
                     results_dir=results_dir,
                     save=True)
 
-if do_maxi_fcmnl or do_eval_fcmnl or do_fixed_fcmnl:
+if do_maxi_fcmnl or do_fixed_fcmnl:
     for b_case in [8]:
 
         print("\n\n" + '*' * 60)
@@ -256,13 +255,6 @@ if do_maxi_fcmnl or do_eval_fcmnl or do_fixed_fcmnl:
                                              n_pars_b_men=n_pars_b_men,
                                              n_pars_b_women=n_pars_b_women)
 
-        if do_eval_fcmnl:
-            m = 20
-            x_values = np.zeros((m, n_params))
-            x_values[:, 1:] = nprepeat_row(x_bases_init, m)
-            x_values[:, 0] = np.arange(m)*(1.0/m)
-            ll_values = evaluate_loglik(fcmnl_params_norm, x_values)
-            print(np.column_stack((x_values[:, 0], ll_values)))
 
         if do_maxi_fcmnl:
             loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, x_init,

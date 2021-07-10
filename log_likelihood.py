@@ -3,7 +3,7 @@ defines the Knitro callbacks for :math:`\\log(L)`:  the log-likelihood and its g
 """
 import numpy as np
 
-from knitro.knitroNumPy import *
+from knitro.numpy.knitroNumPy import *
 
 from cupid_classes import MatchingMus
 from cupid_math_utils import bslog, der_bslog
