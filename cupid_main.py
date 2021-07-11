@@ -26,10 +26,10 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 
 results_dir = root_dir + "Results/"
 
-do_CS_homo = False
-do_CS_hetero = False
-do_CS_heteroxy = False
-do_maxi_fcmnl = True
+do_CS_homo = True
+do_CS_hetero = True
+do_CS_heteroxy = True
+do_maxi_fcmnl = False
 do_fixed_fcmnl = False
 
 # first, read the data
@@ -99,7 +99,7 @@ if do_CS_hetero:
 
     loglik_hetero, estimates_hetero, status_hetero \
         = maximize_loglik(cs_hetero_params_norm, x_init,
-                          lower=lower, upper=upper, checkgrad=True,
+                          lower=lower, upper=upper, checkgrad=False,
                           verbose=False)
 
     print_stars(f"Return status: {status_hetero}")
@@ -169,7 +169,7 @@ if do_CS_heteroxy:
                     save=True)
 
 if do_maxi_fcmnl or do_fixed_fcmnl:
-    for b_case in [8]:
+    for b_case in [4]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
