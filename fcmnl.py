@@ -59,6 +59,8 @@ def _b_two(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: i
         xi = xvec[i]
         db[i, :, :, 0] = (1.0 - xi) / distances
         db[i, :, :, 1] = xi / distances
+        np.fill_diagonal(b[i, :, :], 1.0)
+        np.fill_diagonal(db[i, :, :, 0], 0.0)
     return b, db
 
 
