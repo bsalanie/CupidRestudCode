@@ -169,7 +169,7 @@ if do_CS_heteroxy:
                     save=True)
 
 if do_maxi_fcmnl or do_fixed_fcmnl:
-    for b_case in [4]:
+    for b_case in [5]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
