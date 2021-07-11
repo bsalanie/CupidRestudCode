@@ -256,7 +256,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
         if do_maxi_fcmnl:
             loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, x_init,
                                                                           lower=lower, upper=upper,
-                                                                          checkgrad=True,
+                                                                          checkgrad=False,
                                                                           verbose=True)
             print_stars(f"Return status: {status_fcmnl}")
 
