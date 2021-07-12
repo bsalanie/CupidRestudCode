@@ -26,10 +26,10 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 
 results_dir = root_dir + "Results/"
 
-do_CS_homo = True
-do_CS_hetero = True
-do_CS_heteroxy = True
-do_maxi_fcmnl = False
+do_CS_homo = False
+do_CS_hetero = False
+do_CS_heteroxy = False
+do_maxi_fcmnl = True
 do_fixed_fcmnl = False
 
 # first, read the data
@@ -169,7 +169,7 @@ if do_CS_heteroxy:
                     save=True)
 
 if do_maxi_fcmnl or do_fixed_fcmnl:
-    for b_case in [5]:
+    for b_case in [2]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
