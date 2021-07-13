@@ -269,12 +269,14 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: Mat
         invJ = spla.inv(Jmat)
         J1_I_J1 = invJ @ (Imat @ invJ)
         varcov = J1_I_J1 / N_HOUSEHOLDS_OBS
+
         if exclude_coeffs is not None:
             for i in exclude_coeffs:
                 varcov[i, :] = 0.0
                 varcov[:, i] = 0.0
                 varcov[i, i] = 1.0
-                stderrs = np.sqrt(np.diag(varcov))
+        
+        stderrs = np.sqrt(np.diag(varcov))
 
         estimates_stderrs = np.column_stack((estimates, stderrs))
         print_stars("estimated coefficients and standard errors")

@@ -69,7 +69,7 @@ if do_CS_homo:
 
     analyze_results(cs_homo_params_norm, surplus_params_estimates, sumw2,
                     results_dir=results_dir, str_model="CS_homoskedastic",
-                    save=True)
+                    do_stderrs=True, save=True)
 
 if do_CS_hetero:
     print("\n\n" + '*' * 60)
@@ -106,7 +106,8 @@ if do_CS_hetero:
 
     analyze_results(cs_hetero_params_norm, estimates_hetero,
                     sumw2, str_model="CS_gender_heteroskedastic",
-                    results_dir=results_dir, save=True)
+                    results_dir=results_dir, do_stderrs=True, 
+                    save=True)
 
 if do_CS_heteroxy:
 
@@ -166,7 +167,7 @@ if do_CS_heteroxy:
     analyze_results(cs_heteroxy_params_norm, estimates_heteroxy,
                     sumw2, "CS_heteroXY_" + str_covariates,
                     results_dir=results_dir,
-                    save=True)
+                    do_stderrs=True, save=True)
 
 if do_maxi_fcmnl or do_fixed_fcmnl:
     for b_case in [5]:
@@ -239,7 +240,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
         n_params = n_pars_b + n_bases
 
         x_init = np.loadtxt(results_dir + "Fcmnl/Fcmnl_b5_thetas.txt") + \
-                 np.random.uniform(scale=0.01, size=n_params)
+                 0.01*np.random.uniform(size=n_params)
 
         # bounds on pars_b_men and pars_b_women
         lower = np.full(n_params, -inf)
