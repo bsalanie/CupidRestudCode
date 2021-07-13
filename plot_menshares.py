@@ -108,7 +108,8 @@ ax_right.tick_params(axis='y', labelcolor='tab:blue')
 
 ax_right.legend(loc='upper right')
 fig.tight_layout()
-plt.show()
+#plt.show()
 
-plt.savefig(plots_dir + "MenShares" + str_covariates + ".eps")
+plt.savefig(plots_dir + "MenShares" +
+            str_covariates + ".eps")
 

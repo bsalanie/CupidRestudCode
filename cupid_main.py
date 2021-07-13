@@ -169,7 +169,7 @@ if do_CS_heteroxy:
                     save=True)
 
 if do_maxi_fcmnl or do_fixed_fcmnl:
-    for b_case in [2]:
+    for b_case in [5]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
@@ -235,9 +235,12 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
             results_dir + "Homoskedastic/CS_homoskedastic_thetas.txt")
         x_bases_init = estimates_homo/tau
         x_init = np.concatenate((pars_b_init, x_bases_init))
-        # np.concatenate((pars_b_init, theta_bases_init + np.random.normal(scale=0.01, size=n_bases)))
 
         n_params = n_pars_b + n_bases
+
+        x_init = np.loadtxt(results_dir + "Fcmnl/Fcmnl_b5_thetas.txt") + \
+                 np.random.uniform(scale=0.01, size=n_params)
+
         # bounds on pars_b_men and pars_b_women
         lower = np.full(n_params, -inf)
         lower[:n_pars_b] = 0.0
@@ -266,6 +269,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
                             exclude_coeffs=None,
                             do_stderrs=False,
                             save=True)
+
 
         if do_fixed_fcmnl:
             m = 50

@@ -25,7 +25,7 @@ def log_likelihood(kc, cb, eval_request, eval_result, model_params):
     params = eval_request.x
     mus_and_maybe_grad = model_params.mus_and_maybe_grad
     observed_matching = model_params.observed_matching
-    mus, _ = mus_and_maybe_grad(params, model_params, gr=False)
+    mus, U = mus_and_maybe_grad(params, model_params, gr=False)
     eval_result.obj = -loglik_mus(observed_matching, mus)
 
     print(f"log_mus = {eval_result.obj}")
