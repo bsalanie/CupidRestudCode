@@ -5,9 +5,11 @@ Plot the simulated matching patterns for FCMNL
 import numpy as np
 from math import log
 
+from cupid_classes import CupidParamsFcmnl
 from cupid_utils import root_dir, N_HOUSEHOLDS_OBS, print_stars
 from read_inputs import read_inputs
-from fcmnl import derivs_GplusH_fcmnl
+from solve_for_mus import mus_fcmnl_and_maybe_grad_agd
+from fcmnl import derivs_GplusH_fcmnl, make_b5
 
 import matplotlib.pyplot as plt
 
@@ -25,21 +27,11 @@ muxy_hat_norm, mux0_hat_norm, mu0y_hat_norm = mu_hat_norm.unpack()
 ncat_men, ncat_women, n_bases = phibases.shape
 
 # where we stored the results
-homo_dir = results_dir + "Homskedastic/"
+homo_dir = results_dir + "Homoskedastic/"
 fcmnl_dir = results_dir + "Fcmnl/"
 
 str_title_homo = "Choo-Siow homoskedastic"
 str_title_fcmnl = "Fcmnl"
-
-npars_fcmnl_5 = 32
-npars_b_5 = 2
-
-fits = np.loadtxt(fcmnl_dir +"Fcmnl_b5_fits.txt")
-# total loglik
-fits[0] *= N_HOUSEHOLDS_OBS
-# recompute AIC, BIC
-fits[1] = fits[0] - npars_fcmnl_5
-fits[2] = fits[0] - npars_fcmnl_5 * log(N_HOUSEHOLDS_OBS) / 2.0
 
 # read the simulated mus
 muxy_norm_homo = np.loadtxt(homo_dir + "CS_homoskedastic_muxy_norm.txt")
@@ -49,16 +41,19 @@ muxy_norm_fcmnl5 = np.loadtxt(fcmnl_dir + "Fcmnl_b5_muxy_norm.txt")
 mux0_norm_fcmnl5 = np.loadtxt(fcmnl_dir + "Fcmnl_b5_mux0_norm.txt")
 mu0y_norm_fcmnl5 = np.loadtxt(fcmnl_dir + "Fcmnl_b5_mu0y_norm.txt")
 
-
+# compute the margins
 nx_homo = np.sum(muxy_norm_homo, 1) + mux0_norm_homo
 my_homo = np.sum(muxy_norm_homo, 0) + mu0y_norm_homo
-mugivenx_homo = muxy_norm_homo / nx_homo.reshape((-1, 1))
-mugiveny_homo = muxy_norm_homo / my_homo
 nx_fcmnl5 = np.sum(muxy_norm_fcmnl5, 1) + mux0_norm_fcmnl5
 my_fcmnl5 = np.sum(muxy_norm_fcmnl5, 0) + mu0y_norm_fcmnl5
+# and the conditional matching patterns
+mugivenx_homo = muxy_norm_homo / nx_homo.reshape((-1, 1))
+mugiveny_homo = muxy_norm_homo / my_homo
 mugivenx_fcmnl5 = muxy_norm_fcmnl5 / nx_fcmnl5.reshape((-1, 1))
 mugiveny_fcmnl5 = muxy_norm_fcmnl5 / my_fcmnl5
 
+# compute d2H/(dmu dmu') for the Choo and Siow homoskedastic model
+#   we use the closed form formula
 d2H_homo = []
 for iwoman in range(ncat_women):
     muxy_woman = muxy_norm_homo[:, iwoman]
@@ -66,8 +61,24 @@ for iwoman in range(ncat_women):
     d2H_th = np.diag(muxy_woman) - np.outer(muxy_woman, mugiveny_woman)
     d2H_homo.append(d2H_th)
 
-
-hessH_fcmnl5 = np.loadtxt(fcmnl_dir + "Fcmnl_b5_d2H_VV.txt")
+# for the FCMNL model we need more work
+#  we load the U at the stable matching
+U_fcmnl5 = np.loadtxt(fcmnl_dir + "Fcmnl_b5_U.txt")
+thetas_fcmnl5 = np.loadtxt(fcmnl_dir + "Fcmnl_b5_thetas.txt")
+Phi_fcmnl5 = phibases @ thetas_fcmnl5[2:]
+fcmnl_params_norm = CupidParamsFcmnl(men_margins=nx_norm, women_margins=my_norm,
+                                     observed_matching=mu_hat_norm,
+                                     bases_surplus=phibases,
+                                     mus_and_maybe_grad=mus_fcmnl_and_maybe_grad_agd,
+                                     make_b=make_b5,
+                                     n_pars_b_men=0,
+                                     n_pars_b_women=2)
+pars_b_men = np.array([])
+pars_b_women = thetas_fcmnl5[:2]
+derivs_fcmnl5 = derivs_GplusH_fcmnl(U_fcmnl5, fcmnl_params_norm, Phi_fcmnl5,
+                        pars_b_men, pars_b_women,
+                        derivs=2)
+hessH_fcmnl5 = derivs_fcmnl5.hessians[3]
 
 # need to regroup the nonzero elements
 n_prod_categories = ncat_men * ncat_women
@@ -116,18 +127,6 @@ def plot_matching(axi, fratio, iwoman, ncat_women):
     axi.set_title("Age " + str(iwoman + 16))
 
 
-fig, ax = plt.subplots(nrows, ncols, constrained_layout=True)
-iman = 0
-for i in range(nrows):
-    for j in range(ncols):
-        fratio = d2G_homo[iman] / muxy_norm_homo[iman, :].reshape((-1, 1))
-        plot_matching(ax[i, j], fratio, iman, ncat_men)
-        iman += 1
-
-# fig.suptitle("Semi-elasticities for men, " + str_title_homo)
-plt.savefig(plots_dir + "Semi_elasticities_Fcmnl_men_" + str_fcmnl_homo + ".eps")
-
-plt.clf()
 
 fig, ax = plt.subplots(nrows, ncols, constrained_layout=True)
 iwoman = 0
@@ -137,8 +136,7 @@ for i in range(nrows):
         plot_matching(ax[i, j], fratio, iwoman, ncat_women)
         iwoman += 1
 
-# fig.suptitle("Semi-elasticities for women, " + str_title_homo)
-plt.savefig(plots_dir + "Semi_elasticities_Fcmnl_women_" + str_fcmnl_homo + ".eps")
+plt.savefig(plots_dir + "Semi_elasticities_women_CShomo.eps")
 
 plt.clf()
 
@@ -146,48 +144,8 @@ fig, ax = plt.subplots(nrows, ncols, constrained_layout=True)
 iwoman = 0
 for i in range(nrows):
     for j in range(ncols):
-        fratio = d2H1[iwoman] / muxy_norm1[:, iwoman].reshape((-1, 1))
+        fratio = d2H_fcmnl5[iwoman] / muxy_norm_fcmnl5[:, iwoman].reshape((-1, 1))
         plot_matching(ax[i, j], fratio, iwoman, ncat_women)
         iwoman += 1
 
-# fig.suptitle("Semi-elasticities for women, " + str_title1)
-plt.savefig(plots_dir + "Semi_elasticities_Fcmnl_women_" + str_fcmnl1 + ".eps")
-
-plt.clf()
-
-fig, ax = plt.subplots(nrows, ncols, constrained_layout=True)
-iwoman = 0
-for i in range(nrows):
-    for j in range(ncols):
-        fratio = d2H2[iwoman] / muxy_norm2[:, iwoman].reshape((-1, 1))
-        plot_matching(ax[i, j], fratio, iwoman, ncat_women)
-        iwoman += 1
-
-# fig.suptitle("Semi-elasticities for women, " + str_title2)
-plt.savefig(plots_dir + "Semi_elasticities_Fcmnl_women_" + str_fcmnl2 + ".eps")
-
-plt.clf()
-
-fig, ax = plt.subplots(nrows, ncols, constrained_layout=True)
-iman = 0
-for i in range(nrows):
-    for j in range(ncols):
-        fratio = d2G1x[iman] / muxy_norm1x[iman, :].reshape((-1, 1))
-        plot_matching(ax[i, j], fratio, iman, ncat_men)
-        iman += 1
-
-# fig.suptitle("Semi-elasticities for men, " + str_title1x)
-plt.savefig(plots_dir + "Semi_elasticities_Fcmnl_men_" + str_fcmnl1x + ".eps")
-
-plt.clf()
-
-fig, ax = plt.subplots(nrows, ncols, constrained_layout=True)
-iwoman = 0
-for i in range(nrows):
-    for j in range(ncols):
-        fratio = d2H1x[iwoman] / muxy_norm1x[:, iwoman].reshape((-1, 1))
-        plot_matching(ax[i, j], fratio, iwoman, ncat_women)
-        iwoman += 1
-
-# fig.suptitle("Semi-elasticities for women, " + str_title1x)
-plt.savefig(plots_dir + "Semi_elasticities_Fcmnl_women_" + str_fcmnl1x + ".eps")
+plt.savefig(plots_dir + "Semi_elasticities_women_Fcmnl.eps")
