@@ -26,10 +26,10 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 
 results_dir = root_dir + "Results/"
 
-do_CS_homo = False
-do_CS_hetero = False
-do_CS_heteroxy = False
-do_maxi_fcmnl = True
+do_CS_homo = True
+do_CS_hetero = True
+do_CS_heteroxy = True
+do_maxi_fcmnl = False
 do_fixed_fcmnl = False
 
 # first, read the data

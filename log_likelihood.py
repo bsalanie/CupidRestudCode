@@ -28,7 +28,7 @@ def log_likelihood(kc, cb, eval_request, eval_result, model_params):
     mus, U = mus_and_maybe_grad(params, model_params, gr=False)
     eval_result.obj = -loglik_mus(observed_matching, mus)
 
-    print(f"log_mus = {eval_result.obj}")
+#    print(f"log_mus = {eval_result.obj}")
 
     return 0
 
@@ -71,10 +71,10 @@ def grad_log_likelihood(kc, cb, eval_request, eval_result, model_params):
 
     eval_result.objGrad = -(der_muxy + der_mux0 + der_mu0y)
 
-    n_pars_b = 2
-    print("grad_log_mus : done")
-    for i in range(n_pars_b):
-        print(f"Coeff[{i}] = {params[i]: > 10.3f}")
+#    n_pars_b = 2
+#    print("grad_log_mus : done")
+#    for i in range(n_pars_b):
+#        print(f"Coeff[{i}] = {params[i]: > 10.3f}")
 
     return 0
 

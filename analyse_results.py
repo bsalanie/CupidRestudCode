@@ -246,16 +246,18 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: Mat
         Imat = compute_Imat(estimates, simulated_matching_norm,
                             dmus, sumw2)
 
-        Jmat = compute_Jmat(estimates, model_params,
-                            simulated_matching_norm, dmus)
+      #  Jmat = compute_Jmat(estimates, model_params,
+      #                      simulated_matching_norm, dmus)
 
         if save:
-            np.savetxt(results_dir + str_model + "_Jmat.txt", Jmat)
+      #      np.savetxt(results_dir + str_model + "_Jmat.txt", Jmat)
             np.savetxt(results_dir + str_model + "_Imat.txt", Imat)
 
-        invJ = spla.inv(Jmat)
-        J1_I_J1 = invJ @ (Imat @ invJ)
-        varcov = J1_I_J1 / N_HOUSEHOLDS_OBS
+      #  invJ = spla.inv(Jmat)
+      #  J1_I_J1 = invJ @ (Imat @ invJ)
+      #  varcov = J1_I_J1 / N_HOUSEHOLDS_OBS
+
+        varcov = spla.inv(Imat) / N_HOUSEHOLDS_OBS
 
         stderrs = np.sqrt(np.diag(varcov))
 
