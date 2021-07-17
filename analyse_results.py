@@ -173,8 +173,7 @@ def compute_Jmat(params: np.ndarray, model_params: ModelParams, mus: MatchingMus
 
 
 def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: MatchingMus, str_model: str,
-                    results_dir: Path, exclude_coeffs: Optional[List[int]] = None,
-                    do_stderrs: Optional[bool] = False, save: Optional[bool] = False):
+                    results_dir: Path, do_stderrs: Optional[bool] = False, save: Optional[bool] = False):
     """
 
     :param CupidParams model_params: the model we estimated
@@ -186,8 +185,6 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: Mat
     :param str str_model: a title
 
     :param str results_dir: directory where we save the results
-
-    :param exclude_coeffs: if True, we exclude these coefficients in the computation of the standard errors
 
     :param boolean do_stderrs: if True, we compute the values of the standard errors
 
@@ -256,26 +253,10 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: Mat
             np.savetxt(results_dir + str_model + "_Jmat.txt", Jmat)
             np.savetxt(results_dir + str_model + "_Imat.txt", Imat)
 
-        if exclude_coeffs is not None:
-            # kludge for badly identified coefficients
-            for i in exclude_coeffs:
-                Imat[i, :] = 0.0
-                Imat[:, i] = 0.0
-                Imat[i, i] = 1.0
-                Jmat[i, :] = 0.0
-                Jmat[:, i] = 0.0
-                Jmat[i, i] = 1.0
-
         invJ = spla.inv(Jmat)
         J1_I_J1 = invJ @ (Imat @ invJ)
         varcov = J1_I_J1 / N_HOUSEHOLDS_OBS
 
-        if exclude_coeffs is not None:
-            for i in exclude_coeffs:
-                varcov[i, :] = 0.0
-                varcov[:, i] = 0.0
-                varcov[i, i] = 1.0
-        
         stderrs = np.sqrt(np.diag(varcov))
 
         estimates_stderrs = np.column_stack((estimates, stderrs))

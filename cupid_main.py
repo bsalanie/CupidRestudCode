@@ -36,6 +36,11 @@ do_fixed_fcmnl = False
 data_dir = root_dir + "Data/"
 mu_hat_norm, nx_norm, my_norm, sumw2, phibases, varmus = read_inputs(data_dir)
 
+# clear sumw2
+sumw2.muxy = np.full(sumw2.muxy.shape, 1.0)
+sumw2.mux0 = np.full(sumw2.mux0.shape, 1.0)
+sumw2.mu0y = np.full(sumw2.mu0y.shape, 1.0)
+
 # dimensions
 ncat_men, ncat_women, n_bases = phibases.shape
 
@@ -222,9 +227,6 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
         n_pars_b_women = pars_b_women_init.size
         n_pars_b = n_pars_b_men + n_pars_b_women
 
-        # exclude_coeffs_fcmnl = [5, 7, 9, 11, 13, 15, 17, 19, 21, 23,
-        #                         25, 27, 29, 31, 33]
-
         pars_b_init = np.concatenate((pars_b_men_init, pars_b_women_init))
 
         # FCMNL default parameters
@@ -267,7 +269,6 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
             analyze_results(fcmnl_params_norm, estimates_fcmnl, sumw2,
                             "Fcmnl_b" + str(b_case),
                             results_dir=results_dir,
-                            exclude_coeffs=None,
                             do_stderrs=False,
                             save=True)
 
