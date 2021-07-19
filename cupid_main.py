@@ -34,12 +34,8 @@ do_fixed_fcmnl = False
 
 # first, read the data
 data_dir = root_dir + "Data/"
-mu_hat_norm, nx_norm, my_norm, sumw2, phibases, varmus = read_inputs(data_dir)
+mu_hat_norm, nx_norm, my_norm, phibases, varmus = read_inputs(data_dir)
 
-# clear sumw2
-sumw2.muxy = np.full(sumw2.muxy.shape, 1.0)
-sumw2.mux0 = np.full(sumw2.mux0.shape, 1.0)
-sumw2.mu0y = np.full(sumw2.mu0y.shape, 1.0)
 
 # dimensions
 ncat_men, ncat_women, n_bases = phibases.shape
@@ -72,7 +68,7 @@ if do_CS_homo:
 
     surplus_params_estimates = estimates_surplus_homo
 
-    analyze_results(cs_homo_params_norm, surplus_params_estimates, sumw2,
+    analyze_results(cs_homo_params_norm, surplus_params_estimates, 
                     results_dir=results_dir, str_model="CS_homoskedastic",
                     do_stderrs=True, varmus=varmus, save=True)
 
@@ -110,7 +106,7 @@ if do_CS_hetero:
     print_stars(f"Return status: {status_hetero}")
 
     analyze_results(cs_hetero_params_norm, estimates_hetero,
-                    sumw2, str_model="CS_gender_heteroskedastic",
+                    str_model="CS_gender_heteroskedastic",
                     results_dir=results_dir, do_stderrs=True,
                     varmus=varmus,
                     save=True)
@@ -171,7 +167,7 @@ if do_CS_heteroxy:
     print_stars(f"Return status: {status_heteroxy}")
 
     analyze_results(cs_heteroxy_params_norm, estimates_heteroxy,
-                    sumw2, "CS_heteroXY_" + str_covariates,
+                    "CS_heteroXY_" + str_covariates,
                     results_dir=results_dir,
                     do_stderrs=True,  varmus=varmus, save=True)
 
@@ -267,7 +263,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
                                                                           verbose=True)
             print_stars(f"Return status: {status_fcmnl}")
 
-            analyze_results(fcmnl_params_norm, estimates_fcmnl, sumw2,
+            analyze_results(fcmnl_params_norm, estimates_fcmnl, 
                             "Fcmnl_b" + str(b_case),
                             results_dir=results_dir,
                             save=True)

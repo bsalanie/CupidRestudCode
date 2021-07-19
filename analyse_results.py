@@ -1,5 +1,5 @@
 """
-analyze  estimates
+analyse  estimates
 """
 import numpy as np
 import scipy.linalg as spla
@@ -15,67 +15,6 @@ from cupid_numpy_utils import d2log
 from log_likelihood import loglik_mus
 
 
-def compute_Imat(params: np.ndarray, mus: MatchingMus, dmus: MatchingMus, sumw2: MatchingMus,
-                 do_center: Optional[bool] = True) -> np.ndarray:
-    """
-    compute the outer product of the scores I, with sampling weights,  dividing by N_HOUSEHOLDS_OBS
-
-    :param np.ndarray params: estimated parameter values
-
-    :param MatchingMus mus: estimated (muxy, mux0, mu0y)
-
-    :param MatchingMus dmus: their derivatives wrt the params
-
-    :param MatchingMus sumw2: sums of squared sampling weights in each cell
-
-    :param boolean do_center: True if we center derivatives
-
-    :return: the I matrix
-    """
-    n_params = params.size
-
-    muxy = mus.muxy
-    mux0 = mus.mux0
-    mu0y = mus.mu0y
-    dmus_xy = dmus.muxy
-    dmus_x0 = dmus.mux0
-    dmus_0y = dmus.mu0y
-    N = np.sum(muxy) + np.sum(mux0) + np.sum(mu0y)
-    dN = np.einsum('ijk->k', dmus_xy) + np.sum(dmus_x0, 0) + np.sum(dmus_0y, 0)
-    dlogN = dN / N
-
-    # compute the dlog(mu/N)/dtheta
-    muxy = mus.muxy
-    dlogmuxy_N = np.empty_like(dmus_xy)
-    dlogmux0_N = np.empty_like(dmus_x0)
-    dlogmu0y_N = np.empty_like(dmus_0y)
-    for ik in range(n_params):
-        dlogmuxy_N[:, :, ik] = dmus_xy[:, :, ik] / muxy - dlogN[ik]
-        dlogmux0_N[:, ik] = dmus_x0[:, ik] / mux0 - dlogN[ik]
-        dlogmu0y_N[:, ik] = dmus_0y[:, ik] / mu0y - dlogN[ik]
-
-    # weights
-    sumw2_xy, sumw2_x0, sumw2_0y = sumw2.unpack()
-
-    if do_center:
-        # first, center
-        mean_dlogmuxy_N = np.einsum('ijk,ij->k', dlogmuxy_N, sumw2_xy) / np.sum(sumw2_xy)
-        mean_dlogmux0_N = np.einsum('ik,i->k', dlogmux0_N, sumw2_x0) / np.sum(sumw2_x0)
-        mean_dlogmu0y_N = np.einsum('ik,i->k', dlogmu0y_N, sumw2_0y) / np.sum(sumw2_0y)
-        for ik in range(n_params):
-            dlogmuxy_N[:, :, ik] -= mean_dlogmuxy_N[ik]
-            dlogmux0_N[:, ik] -= mean_dlogmux0_N[ik]
-            dlogmu0y_N[:, ik] -= mean_dlogmu0y_N[ik]
-
-    term_xy = np.einsum('ij,ijk,ijl->kl', sumw2_xy, dlogmuxy_N, dlogmuxy_N)
-    term_x0 = np.einsum('i,ik,il->kl', sumw2_x0, dlogmux0_N, dlogmux0_N)
-    term_0y = np.einsum('j,jk,jl->kl', sumw2_0y, dlogmu0y_N, dlogmu0y_N)
-
-    Imat = (term_xy + term_x0 + term_0y) / (np.sum(sumw2_xy)
-                                            + np.sum(sumw2_x0)
-                                            + np.sum(sumw2_0y))
-
-    return Imat
 
 
 def compute_Jmat(params: np.ndarray, model_params: ModelParams, mus: MatchingMus, dmus: MatchingMus) -> np.ndarray:
@@ -197,7 +136,8 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, str_model:
     bases_surplus = model_params.bases_surplus
 
     ncat_men, ncat_women, n_bases = bases_surplus.shape
-
+    n_prod_categories = ncat_men*ncat_women
+        
     mu_hat_norm = model_params.observed_matching
     mus_and_maybe_grad = model_params.mus_and_maybe_grad
 
@@ -247,17 +187,19 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, str_model:
         np.savetxt(results_dir + str_model + "_fits.txt", fits)
 
     if do_stderrs:
+        muxyv = muxy.reshape(n_prod_categories)
         Jmat = compute_Jmat(estimates, model_params,
                             simulated_matching_norm, dmus)
-        dlogmuxy_dtheta = dmus.muxy/muxy
-        dlogmux0_dtheta = dmus.mux0/mux0
-        dlogmu0y_dtheta = dmus.mu0y/mu0y
+        dlogmuxy_dtheta = np.zeros((n_prod_categories, n_params))
+        for i in range(n_params):
+            dmuxyi = dmus.muxy[:, :, i].reshape(n_prod_categories)
+            dlogmuxy_dtheta[:, i] = dmuxyi/muxyv
+        dlogmux0_dtheta = dmus.mux0/mux0.reshape((-1,1))
+        dlogmu0y_dtheta = dmus.mu0y/mu0y.reshape((-1,1))
         dlogmu_dtheta = np.concatenate((dlogmuxy_dtheta, dlogmux0_dtheta, dlogmu0y_dtheta))
 
-        dtheta_dmuhat = - spla.solve(Jmat, dlogmu_dtheta)
+        dtheta_dmuhat = - spla.solve(Jmat, dlogmu_dtheta.T)
 
-
-        n_prod_categories = ncat_men*ncat_women
         n_bigvar = n_prod_categories + ncat_men + ncat_women
         bigvarmus = np.zeros((n_bigvar, n_bigvar))
         bigvarmus[:n_prod_categories, :n_prod_categories] = varmus[0]
@@ -271,9 +213,9 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, str_model:
             = varmus[4]
         bigvarmus[(n_prod_categories + ncat_men):, n_prod_categories:(n_prod_categories + ncat_men):] \
             = varmus[4].T
-        bigvarmus[(n_prod_categories + ncat_men):, (n_prod_categories+ncat_men)] = varmus[5]
+        bigvarmus[(n_prod_categories + ncat_men):, (n_prod_categories+ncat_men):] = varmus[5]
 
-        var_theta = dtheta_dmuhat @ (bigvarmus @ dtheta_dmuhat.T) / N_HOUSEHOLDS_OBS
+        var_theta = dtheta_dmuhat @ (bigvarmus @ dtheta_dmuhat.T)
         stderrs = np.sqrt(np.diag(var_theta))
 
 

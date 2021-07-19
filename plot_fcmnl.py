@@ -20,7 +20,7 @@ data_dir = root_dir + "Data/"
 plots_dir = root_dir + "Plots/"
 
 # first, read the data
-mu_hat_norm, nx_norm, my_norm, sumw2, phibases, varmus = read_inputs(data_dir)
+mu_hat_norm, nx_norm, my_norm, phibases, varmus = read_inputs(data_dir)
 muxy_hat_norm, mux0_hat_norm, mu0y_hat_norm = mu_hat_norm.unpack()
 
 # dimensions
