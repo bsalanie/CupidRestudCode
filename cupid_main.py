@@ -74,7 +74,7 @@ if do_CS_homo:
 
     analyze_results(cs_homo_params_norm, surplus_params_estimates, sumw2,
                     results_dir=results_dir, str_model="CS_homoskedastic",
-                    do_stderrs=True, save=True)
+                    do_stderrs=True, varmus=varmus, save=True)
 
 if do_CS_hetero:
     print("\n\n" + '*' * 60)
@@ -111,7 +111,8 @@ if do_CS_hetero:
 
     analyze_results(cs_hetero_params_norm, estimates_hetero,
                     sumw2, str_model="CS_gender_heteroskedastic",
-                    results_dir=results_dir, do_stderrs=True, 
+                    results_dir=results_dir, do_stderrs=True,
+                    varmus=varmus,
                     save=True)
 
 if do_CS_heteroxy:
@@ -172,7 +173,7 @@ if do_CS_heteroxy:
     analyze_results(cs_heteroxy_params_norm, estimates_heteroxy,
                     sumw2, "CS_heteroXY_" + str_covariates,
                     results_dir=results_dir,
-                    do_stderrs=True, save=True)
+                    do_stderrs=True,  varmus=varmus, save=True)
 
 if do_maxi_fcmnl or do_fixed_fcmnl:
     for b_case in [5]:
@@ -269,7 +270,6 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
             analyze_results(fcmnl_params_norm, estimates_fcmnl, sumw2,
                             "Fcmnl_b" + str(b_case),
                             results_dir=results_dir,
-                            do_stderrs=False,
                             save=True)
 
 

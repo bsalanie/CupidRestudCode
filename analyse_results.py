@@ -172,21 +172,22 @@ def compute_Jmat(params: np.ndarray, model_params: ModelParams, mus: MatchingMus
     return Jmat
 
 
-def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: MatchingMus, str_model: str,
-                    results_dir: Path, do_stderrs: Optional[bool] = False, save: Optional[bool] = False):
+def analyze_results(model_params: ModelParams, estimates: np.ndarray, str_model: str,
+                    results_dir: Path, do_stderrs: Optional[bool] = False,
+                    varmus: Optional[np.ndarray] = None, save: Optional[bool] = False):
     """
 
     :param CupidParams model_params: the model we estimated
 
     :param np.ndarray estimates: the estimated parameters
 
-    :param MatchingMus sumw2: sums of squared sampling weights in each cell
-
     :param str str_model: a title
 
     :param str results_dir: directory where we save the results
 
     :param boolean do_stderrs: if True, we compute the values of the standard errors
+
+    :param np.ndarray varmus: then we need the variance of the observed mus
 
     :param boolean save: if True, we save the results
 
@@ -203,11 +204,12 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: Mat
     simulated_moments_norm = eval_moments(simulated_matching_norm.muxy,
                                           bases_surplus)
 
+    muxy = simulated_matching_norm.muxy
+    mux0 = simulated_matching_norm.mux0
+    mu0y = simulated_matching_norm.mu0y
+
     if save:
         np.savetxt(results_dir + str_model + "_thetas.txt", estimates)
-        muxy = simulated_matching_norm.muxy
-        mux0 = simulated_matching_norm.mux0
-        mu0y = simulated_matching_norm.mu0y
         np.savetxt(results_dir + str_model + "_muxy_norm.txt", muxy)
         np.savetxt(results_dir + str_model + "_mux0_norm.txt", mux0)
         np.savetxt(results_dir + str_model + "_mu0y_norm.txt", mu0y)
@@ -218,13 +220,13 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: Mat
     print(f"    simulated normalized moments: {simulated_moments_norm}")
 
     print(f"Observed normalized muxy: {mu_hat_norm.muxy[:4, :4]}")
-    print(f"Simulated normalized muxy: {simulated_matching_norm.muxy[:4, :4]}")
+    print(f"Simulated normalized muxy: {muxy[:4, :4]}")
 
     print(f"Observed normalized mux0: {mu_hat_norm.mux0}")
-    print(f"Simulated normalized mux0: {simulated_matching_norm.mux0}")
+    print(f"Simulated normalized mux0: {mux0}")
 
     print(f"Observed normalized mu0y: {mu_hat_norm.mu0y}")
-    print(f"Simulated normalized mu0y: {simulated_matching_norm.mu0y}")
+    print(f"Simulated normalized mu0y: {mu0y}")
 
     loglik_val = loglik_mus(mu_hat_norm, simulated_matching_norm)
     print(f"The loglikelihood is {loglik_val:.6f} per obs")
@@ -243,27 +245,17 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, sumw2: Mat
         np.savetxt(results_dir + str_model + "_fits.txt", fits)
 
     if do_stderrs:
-        Imat = compute_Imat(estimates, simulated_matching_norm,
-                            dmus, sumw2)
+        Jmat = compute_Jmat(estimates, model_params,
+                            simulated_matching_norm, dmus)
+        dlogmu_dtheta = MatchingMus(dmus.muxy/muxy, dmus.mux0/mux0, dmus.mu0y/mu0y)
+        dtheta_dmuhat = - spla.solve(Jmat, dlogmu_dtheta)
+        var_theta = dtheta_dmuhat @ (varmus @ dtheta_dmuhat.T) / N_HOUSEHOLDS_OBS
+        stderrs = np.sqrt(np.diag(var_theta))
 
-      #  Jmat = compute_Jmat(estimates, model_params,
-      #                      simulated_matching_norm, dmus)
 
-        if save:
-      #      np.savetxt(results_dir + str_model + "_Jmat.txt", Jmat)
-            np.savetxt(results_dir + str_model + "_Imat.txt", Imat)
-
-      #  invJ = spla.inv(Jmat)
-      #  J1_I_J1 = invJ @ (Imat @ invJ)
-      #  varcov = J1_I_J1 / N_HOUSEHOLDS_OBS
-
-        varcov = spla.inv(Imat) / N_HOUSEHOLDS_OBS
-
-        stderrs = np.sqrt(np.diag(varcov))
-
+    if save:
         estimates_stderrs = np.column_stack((estimates, stderrs))
         print_stars("estimated coefficients and standard errors")
         for i in range(n_params):
             print(f"{i + 1: > 3d}: {estimates[i]: > 10.3f}     ({stderrs[i]: > 10.3f})")
         np.savetxt(results_dir + str_model + "_estimates.txt", estimates_stderrs)
-
