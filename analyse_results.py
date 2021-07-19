@@ -196,6 +196,8 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, str_model:
 
     bases_surplus = model_params.bases_surplus
 
+    ncat_men, ncat_women, n_bases = bases_surplus.shape
+
     mu_hat_norm = model_params.observed_matching
     mus_and_maybe_grad = model_params.mus_and_maybe_grad
 
@@ -247,9 +249,31 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, str_model:
     if do_stderrs:
         Jmat = compute_Jmat(estimates, model_params,
                             simulated_matching_norm, dmus)
-        dlogmu_dtheta = MatchingMus(dmus.muxy/muxy, dmus.mux0/mux0, dmus.mu0y/mu0y)
+        dlogmuxy_dtheta = dmus.muxy/muxy
+        dlogmux0_dtheta = dmus.mux0/mux0
+        dlogmu0y_dtheta = dmus.mu0y/mu0y
+        dlogmu_dtheta = np.concatenate((dlogmuxy_dtheta, dlogmux0_dtheta, dlogmu0y_dtheta))
+
         dtheta_dmuhat = - spla.solve(Jmat, dlogmu_dtheta)
-        var_theta = dtheta_dmuhat @ (varmus @ dtheta_dmuhat.T) / N_HOUSEHOLDS_OBS
+
+
+        n_prod_categories = ncat_men*ncat_women
+        n_bigvar = n_prod_categories + ncat_men + ncat_women
+        bigvarmus = np.zeros((n_bigvar, n_bigvar))
+        bigvarmus[:n_prod_categories, :n_prod_categories] = varmus[0]
+        bigvarmus[:n_prod_categories, n_prod_categories:(n_prod_categories+ncat_men)] = varmus[1]
+        bigvarmus[n_prod_categories:(n_prod_categories+ncat_men), :n_prod_categories] = varmus[1].T
+        bigvarmus[:n_prod_categories, (n_prod_categories+ncat_men):] = varmus[2]
+        bigvarmus[(n_prod_categories+ncat_men):, :n_prod_categories] = varmus[2].T
+        bigvarmus[n_prod_categories:(n_prod_categories+ncat_men), n_prod_categories:(n_prod_categories+ncat_men)] \
+            = varmus[3]
+        bigvarmus[n_prod_categories:(n_prod_categories + ncat_men):, (n_prod_categories+ncat_men):] \
+            = varmus[4]
+        bigvarmus[(n_prod_categories + ncat_men):, n_prod_categories:(n_prod_categories + ncat_men):] \
+            = varmus[4].T
+        bigvarmus[(n_prod_categories + ncat_men):, (n_prod_categories+ncat_men)] = varmus[5]
+
+        var_theta = dtheta_dmuhat @ (bigvarmus @ dtheta_dmuhat.T) / N_HOUSEHOLDS_OBS
         stderrs = np.sqrt(np.diag(var_theta))
 
 
