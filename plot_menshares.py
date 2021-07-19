@@ -5,7 +5,7 @@ Plot the shares of men in the BIC-preferred CS heteroskedastic model
 import numpy as np
 from math import log
 
-from cupid_utils import root_dir
+from cupid_utils import root_dir, print_stars
 from cupid_numpy_utils import npexp
 from read_inputs import read_inputs
 
@@ -52,6 +52,9 @@ sigma_x = npexp(X_sigma)
 tau_pars = estimatesXY[n_sigma:n_dist_params]
 X_tau = covariates_tau @ tau_pars
 tau_y = npexp(X_tau)
+
+print_stars("Values of sigma_x and tau_y:")
+print(np.column_stack((np.arange(16, 41), sigma_x, tau_y)))
 
 
 def men_shares_XY(age_man, age_woman):

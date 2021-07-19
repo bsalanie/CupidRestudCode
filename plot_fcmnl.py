@@ -3,10 +3,9 @@ Plot the simulated matching patterns for FCMNL
 """
 
 import numpy as np
-from math import log
 
 from cupid_classes import CupidParamsFcmnl
-from cupid_utils import root_dir, N_HOUSEHOLDS_OBS, print_stars
+from cupid_utils import root_dir
 from read_inputs import read_inputs
 from solve_for_mus import mus_fcmnl_and_maybe_grad_agd
 from fcmnl import derivs_GplusH_fcmnl, make_b5
@@ -76,8 +75,8 @@ fcmnl_params_norm = CupidParamsFcmnl(men_margins=nx_norm, women_margins=my_norm,
 pars_b_men = np.array([])
 pars_b_women = thetas_fcmnl5[:2]
 derivs_fcmnl5 = derivs_GplusH_fcmnl(U_fcmnl5, fcmnl_params_norm, Phi_fcmnl5,
-                        pars_b_men, pars_b_women,
-                        derivs=2)
+                                    pars_b_men, pars_b_women,
+                                    derivs=2)
 hessH_fcmnl5 = derivs_fcmnl5.hessians[3]
 
 # need to regroup the nonzero elements
@@ -92,60 +91,81 @@ for iwoman in range(ncat_women):
 # now each d2H[y] is a (ncat_men, ncat_men) matrix  of dmu(x|y)/dV(zy)
 
 
-print_stars("Now ratio of Fcmnl5 to CS homo")
-d2H_fratio = []
-for iwoman in range(ncat_women):
-    d2H_fratio.append(d2H_fcmnl5[iwoman] / d2H_homo[iwoman])
+# the semi-elasticities
+def semi_elasticities(d2H, muxy_norm, iwoman):
+    semi_elast = d2H[iwoman] / muxy_norm[:, iwoman].reshape((-1, 1))
+    np.fill_diagonal(semi_elast, 0.0)
+    return semi_elast
 
-import matplotlib.pyplot as plt
-
-# from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-# style
-plt.style.use('seaborn')
-
-plt.clf()
-
-nrows = 2
-ncols = 3
-
-
-def plot_matching(axi, fratio, iwoman, ncat_women):
-    np.fill_diagonal(fratio, 0.0)
+# ages surrounding a woman's age
+def get_slice(iwoman):
     age_min = 16 + max(0, iwoman - 5)
     age_max = 16 + min(ncat_women, iwoman + 5)
-    n_ages = age_max - age_min
-    slice_woman = slice(age_min - 16, age_max - 16 + 1)
-    axi.imshow(fratio[slice_woman, slice_woman],
-               origin='lower', cmap="YlOrRd")
-    ages_coord = [0, n_ages]
-    ages = [str(age_min), str(age_max)]
-    axi.set_xticks(ages_coord)
-    axi.set_xticklabels(ages)
-    axi.set_yticks(ages_coord)
-    axi.set_yticklabels(ages)
-    axi.set_title("Age " + str(iwoman + 16))
+    return slice(age_min - 16, age_max - 16 + 1)
 
 
-
-fig, ax = plt.subplots(nrows, ncols, constrained_layout=True)
+# to find minimum of minima and maximum of maxima
+#  so that the subplots and the color bar use the same colors
+mini_min = 0.0
+maxi_max = 0.0
 iwoman = 0
-for i in range(nrows):
-    for j in range(ncols):
-        fratio = d2H_homo[iwoman] / muxy_norm_homo[:, iwoman].reshape((-1, 1))
-        plot_matching(ax[i, j], fratio, iwoman, ncat_women)
-        iwoman += 1
+for irow in range(6):
+    semi_elast_homo = semi_elasticities(d2H_homo, muxy_norm_homo, iwoman)
+    semi_elast_fcmnl5 = semi_elasticities(d2H_fcmnl5, muxy_norm_fcmnl5, iwoman)
+    slice_woman = get_slice(iwoman)
+    mini_homo = np.min(semi_elast_homo[slice_woman, slice_woman])
+    mini_fcmnl5 = np.min(semi_elast_fcmnl5[slice_woman, slice_woman])
+    mini_min = min(mini_min, mini_homo, mini_fcmnl5)
+    maxi_homo = np.max(semi_elast_homo[slice_woman, slice_woman])
+    maxi_fcmnl5 = np.max(semi_elast_fcmnl5[slice_woman, slice_woman])
+    maxi_max = max(maxi_max, maxi_homo, maxi_fcmnl5)
 
-plt.savefig(plots_dir + "Semi_elasticities_women_CShomo.eps")
 
-plt.clf()
+def plot_semi_elasticities(semi_elast, axi):
+    return axi.imshow(semi_elast, origin='lower',
+                      vmin=mini_min, vmax=maxi_max,
+                      extent=(-5, 5, -5, 5),
+                      aspect='auto', cmap='viridis')
 
-fig, ax = plt.subplots(nrows, ncols, constrained_layout=True)
+
+fig, ax = plt.subplots(6, 3, figsize=(6, 6))
 iwoman = 0
-for i in range(nrows):
-    for j in range(ncols):
-        fratio = d2H_fcmnl5[iwoman] / muxy_norm_fcmnl5[:, iwoman].reshape((-1, 1))
-        plot_matching(ax[i, j], fratio, iwoman, ncat_women)
-        iwoman += 1
+for irow in range(6):
+    semi_elast_homo = semi_elasticities(d2H_homo, muxy_norm_homo, iwoman)
+    semi_elast_fcmnl5 = semi_elasticities(d2H_fcmnl5, muxy_norm_fcmnl5, iwoman)
+    slice_woman = get_slice(iwoman)
+    # left column
+    im = plot_semi_elasticities(semi_elast_homo[slice_woman, slice_woman], ax[irow, 0])
+    # right column
+    im = plot_semi_elasticities(semi_elast_fcmnl5[slice_woman, slice_woman], ax[irow, 2])
 
-plt.savefig(plots_dir + "Semi_elasticities_women_Fcmnl.eps")
+    # we create the middle column
+    ax[irow, 1].axis("off")
+    ax[irow, 1].grid("off")
+    ax[irow, 1].text(0.25, 0.45, "Age " + str(iwoman + 16))
+
+    if irow != 5:
+        for i in [0, 2]:
+            ax[irow, i].set_xticks([])
+            ax[irow, i].set_yticks([])
+
+    iwoman += 1
+
+for i in [0, 2]:
+    ax[5, i].set_xticks([-5, 0, 5])
+    ax[5, i].set_xticklabels(
+        [str(i) for i in [16, 21, 26]])
+ax[5, 0].set_yticks([-5, 0, 5])
+ax[5, 0].set_yticklabels(
+    [str(i) for i in [16, 21, 26]])
+ax[5, 2].set_yticks([])
+
+ax[0,0].set_title("Choo-Siow homoskedastic", fontsize=12)
+ax[0,2].set_title("FC-MNL", fontsize=12)
+
+# add space for colour bar
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.83, 0.15, 0.04, 0.7])
+fig.colorbar(im, cax=cbar_ax)
+
+plt.savefig(plots_dir + "semi_elasticities.eps")
