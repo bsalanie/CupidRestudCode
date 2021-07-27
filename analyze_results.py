@@ -152,11 +152,11 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray,
     mu0y = simulated_matching_norm.mu0y
 
     if save:
-        np.savetxt(results_dir + str_model + "_thetas.txt", estimates)
-        np.savetxt(results_dir + str_model + "_muxy_norm.txt", muxy)
-        np.savetxt(results_dir + str_model + "_mux0_norm.txt", mux0)
-        np.savetxt(results_dir + str_model + "_mu0y_norm.txt", mu0y)
-        np.savetxt(results_dir + str_model + "_U.txt", U_conv)
+        np.savetxt(results_dir / str_model / "thetas.txt", estimates)
+        np.savetxt(results_dir / str_model / "muxy_norm.txt", muxy)
+        np.savetxt(results_dir / str_model / "mux0_norm.txt", mux0)
+        np.savetxt(results_dir / str_model / "mu0y_norm.txt", mu0y)
+        np.savetxt(results_dir / str_model / "U.txt", U_conv)
 
     moments_hat_norm = eval_moments(mu_hat_norm.muxy, bases_surplus)
     print(f"Observed normalized moments: {moments_hat_norm}")
@@ -185,7 +185,7 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray,
 
     if save:
         fits = np.array([loglik_val, AIC_val, BIC_val])
-        np.savetxt(results_dir + str_model + "_fits.txt", fits)
+        np.savetxt(results_dir / str_model / "fits.txt", fits)
 
     if do_stderrs:
         muxyv = muxy.reshape(n_prod_categories)
@@ -223,7 +223,7 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray,
 
     if save:
         estimates_stderrs = np.column_stack((estimates, stderrs, students))
-        np.savetxt(results_dir + str_model + "_estimates.txt", estimates_stderrs)
+        np.savetxt(results_dir / str_model / "estimates.txt", estimates_stderrs)
         print_stars("estimated coef i(cients, standar)  errors [Students]")
         for i in range(n_params):
             print(f"{i+1: 3d}: {estimates[i]: > 10.3f}     ({stderrs[i]: > 10.3f})  [{students[i]: > 10.3f}]")

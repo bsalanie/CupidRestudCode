@@ -4,6 +4,7 @@ estimate variants of separable models on the Choo and Siow data using maximum li
 
 from math import inf
 import numpy as np
+from pathlib import Path
 
 from cupid_classes import CupidParams, CupidParamsFcmnl, CupidParamsCSHeteroxy
 from cupid_utils import root_dir, print_stars, bs_error_abort
@@ -23,19 +24,18 @@ from solve_for_mus import mus_choosiow_and_maybe_grad, \
 from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
     make_b5, make_b6, make_b7, make_b8
 
-results_dir = root_dir + "Results/"
+results_dir = Path(root_dir) / "Results"
 
-do_CS_homo = False
-do_CS_hetero = True
-do_CS_heteroxy = True
-do_maxi_fcmnl = True
+do_ChooSiow_homoskedastic = False
+do_ChooSiow_gender_heteroskedastic= False
+do_ChooSiow_gender_age_heteroskedastic = True
+do_maxi_fcmnl = False
 do_fixed_fcmnl = False
 
 # first, read the data
-data_dir = root_dir + "Data/Output/"
+data_dir = Path(root_dir) / "Data" / "Output"
 mu_hat_norm, nx_norm, my_norm, \
     phibases, varmus = read_inputs(data_dir)
-
 
 # dimensions
 ncat_men, ncat_women, n_bases = phibases.shape
@@ -54,7 +54,7 @@ cs_homo_params_norm = CupidParams(men_margins=nx_norm, women_margins=my_norm,
                                   mus_and_maybe_grad=mus_choosiow_and_maybe_grad,
                                   ipfp_solver=ipfp_homo_solver)
 
-if do_CS_homo:
+if do_ChooSiow_homoskedastic:
     print("\n\n" + '*' * 60)
     print("\n\n now we estimate a Choo and Siow homoskedastic model")
     print("\n\n" + '*' * 60)
@@ -69,27 +69,27 @@ if do_CS_homo:
     surplus_params_estimates = estimates_surplus_homo
 
     analyze_results(cs_homo_params_norm, surplus_params_estimates, 
-                    "CS_homoskedastic",
+                    "homoskedastic",
                     results_dir=results_dir,
                     do_stderrs=True, varmus=varmus, save=True)
 
-if do_CS_hetero:
+if do_ChooSiow_gender_heteroskedastic:
     print("\n\n" + '*' * 60)
-    print(f"\n\n now we estimate a Choo and Siow gender-heteroskedastic model")
+    print(f"\n\n now we estimate a Choo-Siow gender-heteroskedastic model")
     print("\n\n" + '*' * 60)
 
-    tau0 = 0.3
-    tau1 = 1.8
+    tau_low = 0.5
+    tau_high = 1.5
 
-    tau_init_arr = np.array([(tau0 + tau1) / 2.0])
+    tau_init_arr = np.array([(tau_low + tau_high) / 2.0])
     dist_params = tau_init_arr
 
     n_params = 1 + n_bases
     # bounds
     lower = np.full(n_params, -inf)
-    lower[0] = tau0
+    lower[0] = tau_low
     upper = np.full(n_params, inf)
-    upper[0] = tau1
+    upper[0] = tau_high
 
     cs_hetero_params_norm = cs_homo_params_norm
     cs_hetero_params_norm.mus_and_maybe_grad = mus_choosiow_hetero_and_maybe_grad
@@ -107,13 +107,13 @@ if do_CS_hetero:
     print_stars(f"Return status: {status_hetero}")
 
     analyze_results(cs_hetero_params_norm, estimates_hetero,
-                    "CS_gender_heteroskedastic",
+                    "gender_heteroskedastic",
                     results_dir=results_dir, 
                     do_stderrs=True,
                     varmus=varmus,
                     save=True)
 
-if do_CS_heteroxy:
+if do_ChooSiow_gender_age_heteroskedastic:
 
     print("\n\n" + '*' * 60)
     print(f"\n\n now we estimate a Choo and Siow gender- and age-heteroskedastic model")
@@ -137,8 +137,8 @@ if do_CS_heteroxy:
     for i in range(n_tau_pars):
         covariates_tau[:, i] = phibases[0, :, indices_bases_tau[i]]
     # initial values for the parameters of sigma_x and tau_y
-    sigma_pars_init = np.full(n_sigma_pars, 0.0)
-    tau_pars_init = np.full(n_tau_pars, 0.0)
+    sigma_pars_init = np.full(n_sigma_pars, 0.5)
+    tau_pars_init = np.full(n_tau_pars, -0.5)
     sigma_tau_pars_init = np.concatenate((sigma_pars_init, tau_pars_init))
 
     dist_params = sigma_tau_pars_init
@@ -147,9 +147,9 @@ if do_CS_heteroxy:
 
     # bounds on sigma_pars and tau_pars
     lower = np.full(n_params, -inf)
-    lower[:n_dist_params] = -5.0
+    lower[:n_dist_params] = -2.0
     upper = np.full(n_params, inf)
-    upper[:n_dist_params] = 5.0
+    upper[:n_dist_params] = 2.0
 
     cs_heteroxy_params_norm = CupidParamsCSHeteroxy(men_margins=nx_norm, women_margins=my_norm,
                                                     observed_matching=mu_hat_norm,
@@ -160,7 +160,7 @@ if do_CS_heteroxy:
                                                     covariates_tau=covariates_tau)
 
     x_init = np.concatenate((sigma_tau_pars_init, theta_bases_init)) + \
-        np.random.normal(scale=0.5, size=n_params)
+        np.random.normal(scale=0.2, size=n_params)
     loglik_heteroxy, estimates_heteroxy, status_heteroxy \
         = maximize_loglik(cs_heteroxy_params_norm, x_init,
                           lower=lower, upper=upper, checkgrad=False,
@@ -169,7 +169,7 @@ if do_CS_heteroxy:
     print_stars(f"Return status: {status_heteroxy}")
 
     analyze_results(cs_heteroxy_params_norm, estimates_heteroxy,
-                    "CS_heteroXY_" + str_covariates,
+                    "gender_age_heteroskedastic_" + str_covariates,
                     results_dir=results_dir,
                     do_stderrs=True,  varmus=varmus, save=True)
 
@@ -234,13 +234,13 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
 
         # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
         estimates_homo = np.loadtxt(
-            results_dir + "Homoskedastic/CS_homoskedastic_thetas.txt")
+            results_dir / "homoskedastic" / "thetas.txt")
         x_bases_init = estimates_homo/tau
         x_init = np.concatenate((pars_b_init, x_bases_init))
 
         n_params = n_pars_b + n_bases
 
-        x_init = np.loadtxt(results_dir + "Fcmnl/Fcmnl_b5_thetas.txt") + \
+        x_init = np.loadtxt(results_dir / "Fcmnl_b5" / "thetas.txt") + \
                  0.01*np.random.uniform(size=n_params)
 
         # bounds on pars_b_men and pars_b_women
@@ -293,5 +293,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
                 (pars_b_values, status_fcmnl, loglik_fcmnl))
             print_stars(f"Results of grid search on FCMNL for case {b_case}:")
             print(grid_search_fcmnl)
-            np.savetxt(results_dir + f"GridSearchFCMNL_{b_case}.txt", grid_search_fcmnl,
+            np.savetxt(results_dir / ("Fcmnl_b" + str(b_case)) \
+                       / "GridSearchFCMNL_{b_case}.txt",
+                       grid_search_fcmnl,
                        fmt=['%.3f']*n_pars_b + ['%d'] + ['%.9f'])

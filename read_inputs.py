@@ -1,23 +1,25 @@
 """ read data files and base functions."""
 
 import numpy as np
+from typing import Tuple
+from pathlib import Path
 
 from cupid_classes import MatchingMus
 
 
-def read_inputs(datadir):
-    muxy_hat = np.loadtxt(datadir + "muxy70nN.txt")
+def read_inputs(datadir: Path) -> Tuple:
+    muxy_hat = np.loadtxt(datadir / "muxy70nN.txt")
 
-    nx = np.loadtxt(datadir + "nx70n.txt")
+    nx = np.loadtxt(datadir / "nx70n.txt")
     ncat_men = nx.size
-    my = np.loadtxt(datadir + "my70n.txt")
+    my = np.loadtxt(datadir / "my70n.txt")
     ncat_women = my.size
     n_prod_categories = ncat_men * ncat_women
     mux0_hat = nx - np.sum(muxy_hat, 1)
     mu0y_hat = my - np.sum(muxy_hat, 0)
 
     # variance-covariance of the mus
-    varbigmus_hat = np.loadtxt(datadir + "varmus70nN.txt")
+    varbigmus_hat = np.loadtxt(datadir / "varmus70nN.txt")
     # the matrix has muxy row major, then  mux0, then mu0y packed in each dimension
     varmus_xyzt = varbigmus_hat[:n_prod_categories, :n_prod_categories]
     varmus_xyz0 = varbigmus_hat[:n_prod_categories, n_prod_categories:(n_prod_categories + ncat_men)]
@@ -41,7 +43,7 @@ def read_inputs(datadir):
     varmus = tuple(v/N2 for v in varmus)
 
     # now the bases
-    phibases24 = np.loadtxt(datadir + "phibases24.txt")
+    phibases24 = np.loadtxt(datadir / "phibases24.txt")
     n_bases = phibases24.shape[1]
     phibases = np.empty((ncat_men, ncat_women, n_bases))
     i = 0
