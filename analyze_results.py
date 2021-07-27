@@ -1,5 +1,5 @@
 """
-analyse  estimates
+analyze  estimates
 """
 import numpy as np
 import scipy.linalg as spla
@@ -111,7 +111,8 @@ def compute_Jmat(params: np.ndarray, model_params: ModelParams, mus: MatchingMus
     return Jmat
 
 
-def analyze_results(model_params: ModelParams, estimates: np.ndarray, str_model: str,
+def analyze_results(model_params: ModelParams, estimates: np.ndarray, 
+                    str_model: str,
                     results_dir: Path, do_stderrs: Optional[bool] = False,
                     varmus: Optional[np.ndarray] = None, save: Optional[bool] = False):
     """
@@ -217,11 +218,12 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray, str_model:
 
         var_theta = dtheta_dmuhat @ (bigvarmus @ dtheta_dmuhat.T)
         stderrs = np.sqrt(np.diag(var_theta))
+        students = estimates/stderrs
 
 
     if save:
-        estimates_stderrs = np.column_stack((estimates, stderrs))
-        print_stars("estimated coefficients and standard errors")
-        for i in range(n_params):
-            print(f"{i + 1: > 3d}: {estimates[i]: > 10.3f}     ({stderrs[i]: > 10.3f})")
+        estimates_stderrs = np.column_stack((estimates, stderrs, students))
         np.savetxt(results_dir + str_model + "_estimates.txt", estimates_stderrs)
+        print_stars("estimated coef i(cients, standar)  errors [Students]")
+        for i in range(n_params):
+            print(f"{i+1: 3d}: {estimates[i]: > 10.3f}     ({stderrs[i]: > 10.3f})  [{students[i]: > 10.3f}]")

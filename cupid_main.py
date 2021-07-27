@@ -13,7 +13,7 @@ from read_inputs import read_inputs
 from ipfp_solvers import ipfp_homo_solver, ipfp_hetero_solver, ipfp_heteroxy_solver
 
 from estimate_model import maximize_loglik
-from analyse_results import analyze_results
+from analyze_results import analyze_results
 
 from solve_for_mus import mus_choosiow_and_maybe_grad, \
     mus_choosiow_hetero_and_maybe_grad, \
@@ -33,7 +33,8 @@ do_fixed_fcmnl = False
 
 # first, read the data
 data_dir = root_dir + "Data/Output/"
-mu_hat_norm, nx_norm, my_norm, phibases, varmus = read_inputs(data_dir)
+mu_hat_norm, nx_norm, my_norm, \
+    phibases, varmus = read_inputs(data_dir)
 
 
 # dimensions
@@ -68,7 +69,8 @@ if do_CS_homo:
     surplus_params_estimates = estimates_surplus_homo
 
     analyze_results(cs_homo_params_norm, surplus_params_estimates, 
-                    results_dir=results_dir, str_model="CS_homoskedastic",
+                    "CS_homoskedastic",
+                    results_dir=results_dir,
                     do_stderrs=True, varmus=varmus, save=True)
 
 if do_CS_hetero:
@@ -105,8 +107,9 @@ if do_CS_hetero:
     print_stars(f"Return status: {status_hetero}")
 
     analyze_results(cs_hetero_params_norm, estimates_hetero,
-                    str_model="CS_gender_heteroskedastic",
-                    results_dir=results_dir, do_stderrs=True,
+                    "CS_gender_heteroskedastic",
+                    results_dir=results_dir, 
+                    do_stderrs=True,
                     varmus=varmus,
                     save=True)
 

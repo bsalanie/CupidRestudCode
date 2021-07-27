@@ -30,13 +30,14 @@ def read_inputs(datadir):
 
     # normalize by the number of households in the population
     n_households_pop = np.sum(nx) + np.sum(my) - np.sum(muxy_hat)
+
     muxy_hat_norm = muxy_hat / n_households_pop
     mux0_hat_norm = mux0_hat / n_households_pop
     mu0y_hat_norm = mu0y_hat / n_households_pop
     mu_hat_norm = MatchingMus(muxy_hat_norm, mux0_hat_norm, mu0y_hat_norm)
     nx_norm = nx / n_households_pop
     my_norm = my / n_households_pop
-    N2 = n_households_pop
+    N2 = n_households_pop * n_households_pop
     varmus = tuple(v/N2 for v in varmus)
 
     # now the bases
