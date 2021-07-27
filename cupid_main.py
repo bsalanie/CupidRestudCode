@@ -25,10 +25,10 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 
 results_dir = root_dir + "Results/"
 
-do_CS_homo = True
-do_CS_hetero = False
-do_CS_heteroxy = False
-do_maxi_fcmnl = False
+do_CS_homo = False
+do_CS_hetero = True
+do_CS_heteroxy = True
+do_maxi_fcmnl = True
 do_fixed_fcmnl = False
 
 # first, read the data
@@ -200,7 +200,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
             pars_b_men_init = np.full(1, 0.2)
             pars_b_women_init = np.full(1, 0.2)
             make_b = make_b4
-        elif b_case == 5:                                # orders (0,2)
+        elif b_case == 5:                                # orders (0,2) --- the BIC-best model
             pars_b_men_init = np.array([])
             pars_b_women_init = np.full(2, 0.2)
             make_b = make_b5
@@ -271,7 +271,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
                             save=True)
 
 
-        if do_fixed_fcmnl:
+        if do_fixed_fcmnl:                         # may be useful to find good starting points
             m = 50
             pars_b_values = np.random.uniform(
                 size=m*n_pars_b).reshape((m, n_pars_b))
