@@ -7,7 +7,6 @@ import numpy as np
 
 from cupid_classes import CupidParams, CupidParamsFcmnl, CupidParamsCSHeteroxy
 from cupid_utils import root_dir, print_stars, bs_error_abort
-from cupid_numpy_utils import nprepeat_row
 
 from read_inputs import read_inputs
 
@@ -27,13 +26,13 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 results_dir = root_dir + "Results/"
 
 do_CS_homo = True
-do_CS_hetero = True
-do_CS_heteroxy = True
+do_CS_hetero = False
+do_CS_heteroxy = False
 do_maxi_fcmnl = False
 do_fixed_fcmnl = False
 
 # first, read the data
-data_dir = root_dir + "Data/"
+data_dir = root_dir + "Data/Output/"
 mu_hat_norm, nx_norm, my_norm, phibases, varmus = read_inputs(data_dir)
 
 

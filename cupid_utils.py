@@ -10,10 +10,9 @@ root_dir = "./"
 EULER_CONSTANT = 0.5772156649
 
 """
-numbers of households, in the population and in the sample
+numbers of households in the sample
 """
-N_HOUSEHOLDS_POP = 13_272_301
-N_HOUSEHOLDS_OBS = 224_068
+N_HOUSEHOLDS_OBS = 72565
 
 MIN_MUS = 1  # use larger values in bad cases, to bound below the mus
 MIN_MUS_NORM = 1e-8  # use larger values in bad cases, to bound below the normalized mus
