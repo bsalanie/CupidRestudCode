@@ -4,7 +4,6 @@ estimate variants of separable models on the Choo and Siow data using maximum li
 
 from math import inf
 import numpy as np
-from pathlib import Path
 
 from cupid_classes import CupidParams, CupidParamsFcmnl, CupidParamsCSHeteroxy
 from cupid_utils import root_dir, print_stars, bs_error_abort
@@ -24,7 +23,7 @@ from solve_for_mus import mus_choosiow_and_maybe_grad, \
 from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
     make_b5, make_b6, make_b7, make_b8
 
-results_dir = Path(root_dir) / "Results"
+results_dir = root_dir / "Results"
 
 do_ChooSiow_homoskedastic = False
 do_ChooSiow_gender_heteroskedastic= False
@@ -33,7 +32,7 @@ do_maxi_fcmnl = True
 do_fixed_fcmnl = False
 
 # first, read the data
-data_dir = Path(root_dir) / "Data" / "Output"
+data_dir = root_dir / "Data" / "Output"
 mu_hat_norm, nx_norm, my_norm, \
     phibases, varmus = read_inputs(data_dir)
 

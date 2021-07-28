@@ -2,10 +2,11 @@ from math import sqrt
 import numpy as np
 import scipy.stats as sts
 import sys
-from typing import Optional
+from typing import Optional, Union
+from pathlib import Path
 from traceback import extract_stack
 
-root_dir = "./"
+root_dir = Path("./")
 
 EULER_CONSTANT = 0.5772156649
 
@@ -62,6 +63,25 @@ def bs_error_abort(msg: Optional[str] = "error, aborting") -> None:
     """
     print_stars(f"{bs_name_func(3)}: {msg}")
     sys.exit(1)
+
+
+
+def mkdir_if_needed(p: Union[Path, str]) -> Path:
+    """
+    create the directory if it does not exist
+
+    :param Path or str p: a path
+
+    :return the directory Path
+
+    """
+    try:
+        q = Path(p)
+    except:
+        bs_error_abort(f"{p} is not a path")
+    if not q.exists():
+        q.mkdir(parents=True)
+    return q
 
 
 def describe_array(v: np.ndarray, name: str = "v") -> None:

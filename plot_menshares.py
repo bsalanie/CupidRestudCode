@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
 
-results_dir = root_dir + "Results/"
-data_dir = root_dir + "Data/"
-plots_dir = root_dir + "Plots/"
+results_dir = root_dir / "Results"
+data_dir = root_dir / "Data" / "Output"
+plots_dir = root_dir / "Plots"
 
 # first, read the data
 mu_hat_norm, nx_norm, my_norm, phibases, varmus = read_inputs(data_dir)
@@ -24,8 +24,14 @@ muxy_hat_norm, mux0_hat_norm, mu0y_hat_norm = mu_hat_norm.unpack()
 # dimensions
 ncat_men, ncat_women, n_bases = phibases.shape
 
-# select the bases functions which sigma_x and tau_y depend on
-indices_bases_sigma = [2]
+# gender-heteroskedastic
+estimates_gender_age_heteroskedastic = np.loadtxt(results_dir / "gender_heteroskedastic" / "thetas.txt")
+tau_gender_hetero = estimates_gender_age_heteroskedastic[0]
+
+
+# gender- and age-heteroskedastic
+#    select the bases functions which sigma_x and tau_y depend on
+indices_bases_sigma = [10]
 indices_bases_tau = [0]
 str_covariates = ""
 for i in indices_bases_sigma:
@@ -42,28 +48,19 @@ covariates_tau = np.empty((ncat_women, n_tau))
 for i in range(n_tau):
     covariates_tau[:, i] = phibases[0, :, indices_bases_tau[i]]
 # the estimates
-str_model = "GenderAgeHeteroskedastic/CS_heteroXY_" + str_covariates
-estimatesXY = np.loadtxt(results_dir + str_model + "_thetas.txt")
+str_model = "gender_age_heteroskedastic_" + str_covariates
+estimates_gender_age_heteroskedastic = np.loadtxt(results_dir / str_model / "thetas.txt")
 
 n_dist_params = n_sigma + n_tau
-sigma_pars = estimatesXY[:n_sigma]
+sigma_pars = estimates_gender_age_heteroskedastic[:n_sigma]
 X_sigma = covariates_sigma @ sigma_pars
 sigma_x = npexp(X_sigma)
-tau_pars = estimatesXY[n_sigma:n_dist_params]
+tau_pars = estimates_gender_age_heteroskedastic[n_sigma:n_dist_params]
 X_tau = covariates_tau @ tau_pars
 tau_y = npexp(X_tau)
 
 print_stars("Values of sigma_x and tau_y:")
 print(np.column_stack((np.arange(16, 41), sigma_x, tau_y)))
-
-
-def men_shares_XY(age_man, age_woman):
-    agem, agew = age_man-15, age_woman-15
-    sigmax = sigma_x[agem]
-    tauy = tau_y[agew]
-    u_x = - sigmax * log(mux0_hat_norm[agem]/nx_norm[agem])
-    v_y = - tauy * log(mu0y_hat_norm[agew]/my_norm[agew])
-    return u_x/(u_x+v_y)
 
 
 def men_shares_homo(age_man, age_woman):
@@ -73,14 +70,34 @@ def men_shares_homo(age_man, age_woman):
     return u_x/(u_x+v_y)
 
 
+def men_shares_gender_hetero(age_man, age_woman):
+    agem, agew = age_man-15, age_woman-15
+    sigmax = 1.0
+    tauy = tau_gender_hetero
+    u_x = - sigmax * log(mux0_hat_norm[agem]/nx_norm[agem])
+    v_y = - tauy * log(mu0y_hat_norm[agew]/my_norm[agew])
+    return u_x/(u_x+v_y)
+
+
+def men_shares_gender_age_hetero(age_man, age_woman):
+    agem, agew = age_man-15, age_woman-15
+    sigmax = sigma_x[agem]
+    tauy = tau_y[agew]
+    u_x = - sigmax * log(mux0_hat_norm[agem]/nx_norm[agem])
+    v_y = - tauy * log(mu0y_hat_norm[agew]/my_norm[agew])
+    return u_x/(u_x+v_y)
+
+
 shares_homo = np.zeros(25)
-shares_hetero = np.zeros(25)
+shares_gender_hetero = np.zeros(25)
+shares_gender_age_hetero = np.zeros(25)
 muxx = np.zeros(25)
 
 total_marriages_norm = np.sum(muxy_hat_norm)
 for age in range(25):
     shares_homo[age] = men_shares_homo(age+15, age+15)
-    shares_hetero[age] = men_shares_XY(age+15, age+15)
+    shares_gender_hetero[age] = men_shares_gender_hetero(age+15, age+15)
+    shares_gender_age_hetero[age] = men_shares_gender_age_hetero(age+15, age+15)
     muxx[age] = muxy_hat_norm[age, age]/total_marriages_norm
 
 
@@ -92,13 +109,17 @@ age_slice = slice(agebeg-16, ageend-15)
 
 plt.clf()
 fig, ax = plt.subplots()
-ax.plot(ages, shares_homo[age_slice], '-ro',
+ax.plot(ages, shares_gender_age_hetero[age_slice], '-rx',
+        label='Gender- and age-heteroskedastic')
+ax.plot(ages, shares_gender_hetero[age_slice], '-g',
+        label='Gender-heteroskedastic')
+ax.plot(ages, shares_homo[age_slice], '-ko',
         label='Homoskedastic')
-ax.plot(ages, shares_hetero[age_slice], '-gx',
-        label='Heteroskedastic')
 ax.set_xlabel("Age of partners")
 ax.set_ylabel("Man's share")
-ax.set_ylim(0.0, 1.0)
+ax.set_ylim(0.0, 1.1)
+ax.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0])
+ax.set_yticklabels(["0", "0.25", "0.5", "0.75", "1"])
 ax.axhline(y=0.5, ls='--', c='k')
 ax.legend(loc='upper left')
 
@@ -109,10 +130,9 @@ ax_right.bar(ages, muxx[age_slice], color='b',
 ax_right.set_ylim(0.0, 0.15)
 ax_right.tick_params(axis='y', labelcolor='tab:blue')
 
-ax_right.legend(loc='upper right')
+ax_right.legend(loc='lower right')
 fig.tight_layout()
 #plt.show()
 
-plt.savefig(plots_dir + "MenShares" +
-            str_covariates + ".eps")
+plt.savefig(plots_dir / ("MenShares" + str_covariates + ".eps"))
 
