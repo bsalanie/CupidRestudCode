@@ -31,7 +31,7 @@ tau_gender_hetero = estimates_gender_age_heteroskedastic[0]
 
 # gender- and age-heteroskedastic
 #    select the bases functions which sigma_x and tau_y depend on
-indices_bases_sigma = [10]
+indices_bases_sigma = [10, 20]
 indices_bases_tau = [0]
 str_covariates = ""
 for i in indices_bases_sigma:
@@ -130,7 +130,7 @@ ax_right.bar(ages, muxx[age_slice], color='b',
 ax_right.set_ylim(0.0, 0.15)
 ax_right.tick_params(axis='y', labelcolor='tab:blue')
 
-ax_right.legend(loc='lower right')
+ax_right.legend(loc='best', bbox_to_anchor=(0.9, 0.3))
 fig.tight_layout()
 #plt.show()
 
