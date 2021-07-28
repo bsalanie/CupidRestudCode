@@ -23,12 +23,20 @@ print_stars("Improvements gender heteroskedastic - homoskedastic")
 print(fits_hetero-fits_homo)
 
 
-for strx in ["10", "1020"]:
-    for stry in ["0", "02", "024", "0246", "02468"]:
-        str_xy = strx + "_" + stry
-        fits_heteroxy = make_fits(np.loadtxt(results_dir
-                       / ("gender_age_heteroskedastic_" + str_xy) / "fits.txt"))
+strx = "1020"
+stry = "0"
 
-        print_stars(f"Improvements gender age heteroskedastic {str_xy}  - homoskedastic")
+str_xy = strx + "_" + stry
+fits_heteroxy = make_fits(np.loadtxt(
+    results_dir / ("gender_age_heteroskedastic_" + str_xy) / "fits.txt"))
 
-        print(fits_heteroxy-fits_homo)
+print_stars(f"Improvements gender age heteroskedastic {str_xy}  - homoskedastic")
+
+print(fits_heteroxy-fits_homo)
+
+fits_fcmnl = make_fits(np.loadtxt(
+    results_dir / "Fcmnl_b5" / "fits.txt"))
+
+print_stars(f"Improvements Fcmnl  - homoskedastic")
+
+print(fits_fcmnl-fits_homo)

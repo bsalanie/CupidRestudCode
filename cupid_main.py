@@ -26,10 +26,9 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 results_dir = root_dir / "Results"
 
 do_ChooSiow_homoskedastic = False
-do_ChooSiow_gender_heteroskedastic= False
-do_ChooSiow_gender_age_heteroskedastic = True
-do_maxi_fcmnl = False
-do_fixed_fcmnl = False
+do_ChooSiow_gender_heteroskedastic = False
+do_ChooSiow_gender_age_heteroskedastic = False
+do_maxi_fcmnl = True
 
 # first, read the data
 data_dir = root_dir / "Data" / "Output"
@@ -58,7 +57,7 @@ if do_ChooSiow_homoskedastic:
     print("\n\n now we estimate a Choo and Siow homoskedastic model")
     print("\n\n" + '*' * 60)
 
-    x_init = theta_bases_init + np.random.normal(scale=0.5, size=n_bases)
+    x_init = theta_bases_init
 
     loglik_homo, estimates_surplus_homo, status_homo \
         = maximize_loglik(cs_homo_params_norm, x_init, verbose=False, checkgrad=False)
@@ -96,7 +95,7 @@ if do_ChooSiow_gender_heteroskedastic:
     cs_hetero_params_norm.dist_params = dist_params
 
     x_init = np.concatenate(
-        (tau_init_arr, theta_bases_init + np.random.normal(scale=0.1, size=n_bases)))
+        (tau_init_arr, theta_bases_init))
 
     loglik_hetero, estimates_hetero, status_hetero \
         = maximize_loglik(cs_hetero_params_norm, x_init,
@@ -123,8 +122,8 @@ if do_ChooSiow_gender_age_heteroskedastic:
                                   / "thetas.txt")
 
     # select the bases functions which sigma_x and tau_y depend on
-    indices_bases_sigma = [10]
-    indices_bases_tau = [0, 2]
+    indices_bases_sigma = [10, 20]
+    indices_bases_tau = [0]
     str_covariates = ""
     for i in indices_bases_sigma:
         str_covariates += str(i)
@@ -162,8 +161,7 @@ if do_ChooSiow_gender_age_heteroskedastic:
                                                     covariates_sigma=covariates_sigma,
                                                     covariates_tau=covariates_tau)
 
-    x_init = np.concatenate((sigma_tau_pars_init, theta_bases_init)) + \
-        np.random.normal(scale=0.2, size=n_params)
+    x_init = np.concatenate((sigma_tau_pars_init, theta_bases_init))
     loglik_heteroxy, estimates_heteroxy, status_heteroxy \
         = maximize_loglik(cs_heteroxy_params_norm, x_init,
                           lower=lower, upper=upper, checkgrad=False,
@@ -176,7 +174,7 @@ if do_ChooSiow_gender_age_heteroskedastic:
                     results_dir=results_dir,
                     do_stderrs=True,  varmus=varmus, save=True)
 
-if do_maxi_fcmnl or do_fixed_fcmnl:
+if do_maxi_fcmnl:
     for b_case in [5]:
 
         print("\n\n" + '*' * 60)
@@ -188,42 +186,39 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
             pars_b_women_init = np.array([])
             make_b = make_b0
         elif b_case == 1:                                  # orders (1,0)
-            pars_b_men_init = np.full(1, 0.2)
+            pars_b_men_init = np.full(1, 0.1)
             pars_b_women_init = np.array([])
             make_b = make_b1
         elif b_case == 2:                                # orders (0,1)
             pars_b_men_init = np.array([])
-            pars_b_women_init = np.full(1, 0.2)
+            pars_b_women_init = np.full(1, 0.1)
             make_b = make_b2
         elif b_case == 3:                                # orders (2,0)
-            pars_b_men_init = np.full(2, 0.2)
+            pars_b_men_init = np.full(2, 0.1)
             pars_b_women_init = np.array([])
             make_b = make_b3
         elif b_case == 4:                                # orders (1,1)
-            pars_b_men_init = np.full(1, 0.2)
-            pars_b_women_init = np.full(1, 0.2)
+            pars_b_men_init = np.full(1, 0.1)
+            pars_b_women_init = np.full(1, 0.1)
             make_b = make_b4
         elif b_case == 5:                                # orders (0,2) --- the BIC-best model
             pars_b_men_init = np.array([])
-            pars_b_women_init = np.full(2, 0.2)
+            pars_b_women_init = np.array([0.15, 0.05])
             make_b = make_b5
         elif b_case == 6:                                # orders (2,1)
-            pars_b_men_init = np.full(2, 0.2)
-            pars_b_women_init = np.full(1, 0.2)
+            pars_b_men_init = np.full(2, 0.1)
+            pars_b_women_init = np.full(1, 0.1)
             make_b = make_b6
         elif b_case == 7:  # orders (1,2)
-            pars_b_men_init = np.full(1, 0.2)
-            pars_b_women_init = np.full(2, 0.2)
+            pars_b_men_init = np.full(1, 0.1)
+            pars_b_women_init = np.full(2, 0.1)
             make_b = make_b7
-        elif b_case == 8:  # # orders (2,2)
+        elif b_case == 8:  #  orders (2,2)
             pars_b_men_init = np.full(2, 0.1)
             pars_b_women_init = np.full(2, 0.1)
             make_b = make_b8
         else:
             bs_error_abort(f"No such thing as b_case={b_case}")
-
-        fixed_vars = None  # [0,1,2,3]
-        fixed_vals = None  # [0.0]*4
 
         n_pars_b_men = pars_b_men_init.size
         n_pars_b_women = pars_b_women_init.size
@@ -238,6 +233,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
         # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
         estimates_homo = np.loadtxt(
             results_dir / "homoskedastic" / "thetas.txt")
+        # they need to be rescaled 
         x_bases_init = estimates_homo/tau
         x_init = np.concatenate((pars_b_init, x_bases_init))
 
@@ -247,7 +243,7 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
         lower = np.full(n_params, -inf)
         lower[:n_pars_b] = 0.0
         upper = np.full(n_params, inf)
-        upper[:n_pars_b] = 1.0
+        upper[:n_pars_b] = 0.5
 
         fcmnl_params_norm = CupidParamsFcmnl(men_margins=nx_norm, women_margins=my_norm,
                                              observed_matching=mu_hat_norm,
@@ -270,30 +266,3 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
                             results_dir=results_dir,
                             save=True)
 
-
-        if do_fixed_fcmnl:                         # may be useful to find good starting points
-            m = 50
-            pars_b_values = np.random.uniform(
-                size=m*n_pars_b).reshape((m, n_pars_b))
-            fixed_vars = range(n_pars_b)
-            status_fcmnl = np.zeros(m, dtype=int)
-            loglik_fcmnl = np.zeros(m)
-            estimates_fcmnl = np.zeros((m, n_params))
-            for i in range(m):
-                fixed_vals = pars_b_values[i, :]
-                x_init[fixed_vars] = fixed_vals
-                loglik_fcmnl[i], estimates_fcmnl[i, :], status_fcmnl[i] = \
-                    maximize_loglik(fcmnl_params_norm, x_init,
-                                    lower=lower, upper=upper,
-                                    fixed_vars=fixed_vars, fixed_vals=fixed_vals,
-                                    options={'iprint': 1},
-                                    checkgrad=False)
-
-            grid_search_fcmnl = np.column_stack(
-                (pars_b_values, status_fcmnl, loglik_fcmnl))
-            print_stars(f"Results of grid search on FCMNL for case {b_case}:")
-            print(grid_search_fcmnl)
-            np.savetxt(results_dir / ("Fcmnl_b" + str(b_case)) \
-                       / "GridSearchFCMNL_{b_case}.txt",
-                       grid_search_fcmnl,
-                       fmt=['%.3f']*n_pars_b + ['%d'] + ['%.9f'])

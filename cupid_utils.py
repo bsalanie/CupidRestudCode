@@ -13,7 +13,7 @@ EULER_CONSTANT = 0.5772156649
 """
 numbers of households in the sample
 """
-N_HOUSEHOLDS_OBS = 72565
+N_HOUSEHOLDS_OBS = 75265
 
 MIN_MUS = 1  # use larger values in bad cases, to bound below the mus
 MIN_MUS_NORM = 1e-8  # use larger values in bad cases, to bound below the normalized mus

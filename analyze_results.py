@@ -222,9 +222,9 @@ def analyze_results(model_params: ModelParams, estimates: np.ndarray,
         students = estimates/stderrs
 
 
-    if save:
-        estimates_stderrs = np.column_stack((estimates, stderrs, students))
-        np.savetxt(results_model / "estimates.txt", estimates_stderrs)
-        print_stars("estimated coefficients   (standard errors)  [Students]")
-        for i in range(n_params):
-            print(f"{i+1: 3d}: {estimates[i]: > 10.3f}     ({stderrs[i]: > 10.3f})  [{students[i]: > 10.3f}]")
+        if save:
+            estimates_stderrs = np.column_stack((estimates, stderrs, students))
+            np.savetxt(results_model / "estimates.txt", estimates_stderrs)
+            print_stars("estimated coefficients   (standard errors)  [Students]")
+            for i in range(n_params):
+                print(f"{i+1: 3d}: {estimates[i]: > 10.3f}     ({stderrs[i]: > 10.3f})  [{students[i]: > 10.3f}]")
