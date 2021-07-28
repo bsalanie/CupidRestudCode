@@ -27,8 +27,8 @@ results_dir = root_dir / "Results"
 
 do_ChooSiow_homoskedastic = False
 do_ChooSiow_gender_heteroskedastic= False
-do_ChooSiow_gender_age_heteroskedastic = False
-do_maxi_fcmnl = True
+do_ChooSiow_gender_age_heteroskedastic = True
+do_maxi_fcmnl = False
 do_fixed_fcmnl = False
 
 # first, read the data
@@ -124,7 +124,7 @@ if do_ChooSiow_gender_age_heteroskedastic:
 
     # select the bases functions which sigma_x and tau_y depend on
     indices_bases_sigma = [10]
-    indices_bases_tau = [0]
+    indices_bases_tau = [0, 2]
     str_covariates = ""
     for i in indices_bases_sigma:
         str_covariates += str(i)
