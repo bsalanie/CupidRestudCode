@@ -6,6 +6,8 @@ from math import log
 import numpy as np
 from typing import Tuple, Optional, Union
 
+import multiprocessing as mp
+
 from cupid_classes import GHReturn, DerivsGHReturn, CupidParamsFcmnl
 
 from cupid_utils import EULER_CONSTANT, print_stars, describe_array, bs_error_abort, GRADIENT_STEP
