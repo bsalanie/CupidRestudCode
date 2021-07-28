@@ -28,8 +28,8 @@ results_dir = Path(root_dir) / "Results"
 
 do_ChooSiow_homoskedastic = False
 do_ChooSiow_gender_heteroskedastic= False
-do_ChooSiow_gender_age_heteroskedastic = True
-do_maxi_fcmnl = False
+do_ChooSiow_gender_age_heteroskedastic = False
+do_maxi_fcmnl = True
 do_fixed_fcmnl = False
 
 # first, read the data
@@ -119,8 +119,12 @@ if do_ChooSiow_gender_age_heteroskedastic:
     print(f"\n\n now we estimate a Choo and Siow gender- and age-heteroskedastic model")
     print("\n\n" + '*' * 60)
 
+    # use the homoskedastic estimates for the bases
+    theta_bases_init = np.loadtxt(results_dir / "homoskedastic" \
+                                  / "thetas.txt")
+
     # select the bases functions which sigma_x and tau_y depend on
-    indices_bases_sigma = [2]
+    indices_bases_sigma = [10]
     indices_bases_tau = [0]
     str_covariates = ""
     for i in indices_bases_sigma:
@@ -137,8 +141,8 @@ if do_ChooSiow_gender_age_heteroskedastic:
     for i in range(n_tau_pars):
         covariates_tau[:, i] = phibases[0, :, indices_bases_tau[i]]
     # initial values for the parameters of sigma_x and tau_y
-    sigma_pars_init = np.full(n_sigma_pars, 0.5)
-    tau_pars_init = np.full(n_tau_pars, -0.5)
+    sigma_pars_init = np.full(n_sigma_pars, 0.0)
+    tau_pars_init = np.full(n_tau_pars, 0.0)
     sigma_tau_pars_init = np.concatenate((sigma_pars_init, tau_pars_init))
 
     dist_params = sigma_tau_pars_init
@@ -147,9 +151,9 @@ if do_ChooSiow_gender_age_heteroskedastic:
 
     # bounds on sigma_pars and tau_pars
     lower = np.full(n_params, -inf)
-    lower[:n_dist_params] = -2.0
+    lower[:n_dist_params] = -3.0
     upper = np.full(n_params, inf)
-    upper[:n_dist_params] = 2.0
+    upper[:n_dist_params] = 3.0
 
     cs_heteroxy_params_norm = CupidParamsCSHeteroxy(men_margins=nx_norm, women_margins=my_norm,
                                                     observed_matching=mu_hat_norm,
@@ -239,9 +243,6 @@ if do_maxi_fcmnl or do_fixed_fcmnl:
         x_init = np.concatenate((pars_b_init, x_bases_init))
 
         n_params = n_pars_b + n_bases
-
-        x_init = np.loadtxt(results_dir / "Fcmnl_b5" / "thetas.txt") + \
-                 0.01*np.random.uniform(size=n_params)
 
         # bounds on pars_b_men and pars_b_women
         lower = np.full(n_params, -inf)

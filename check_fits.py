@@ -24,7 +24,7 @@ print(fits_hetero-fits_homo)
 
 
 fits_heteroxy = make_fits(np.loadtxt(results_dir
-                       / "gender_age_heteroskedastic_2_0/fits.txt"))
+                       / "gender_age_heteroskedastic_10_0/fits.txt"))
 
 print_stars("Improvements gender age heteroskedastic - homoskedastic")
 
