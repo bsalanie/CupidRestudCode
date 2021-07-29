@@ -26,9 +26,9 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 results_dir = root_dir / "Results"
 
 do_ChooSiow_homoskedastic = False
-do_ChooSiow_gender_heteroskedastic = False
-do_ChooSiow_gender_age_heteroskedastic = False
-do_maxi_fcmnl = True
+do_ChooSiow_gender_heteroskedastic = True
+do_ChooSiow_gender_age_heteroskedastic = True
+do_maxi_fcmnl = False
 
 # first, read the data
 data_dir = root_dir / "Data" / "Output"
@@ -60,7 +60,8 @@ if do_ChooSiow_homoskedastic:
     x_init = theta_bases_init
 
     loglik_homo, estimates_surplus_homo, status_homo \
-        = maximize_loglik(cs_homo_params_norm, x_init, verbose=False, checkgrad=False)
+        = maximize_loglik(cs_homo_params_norm, x_init, verbose=False,
+                          checkgrad=False)
 
     print_stars(f"Return status: {status_homo}")
 
@@ -249,6 +250,7 @@ if do_maxi_fcmnl:
                                              observed_matching=mu_hat_norm,
                                              bases_surplus=phibases,
                                              mus_and_maybe_grad=mus_fcmnl_and_maybe_grad_agd,
+                                             tol_agd=1e-12,
                                              make_b=make_b,
                                              n_pars_b_men=n_pars_b_men,
                                              n_pars_b_women=n_pars_b_women)
