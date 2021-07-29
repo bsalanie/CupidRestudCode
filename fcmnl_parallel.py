@@ -1,5 +1,5 @@
 """
-G and H functions for FC-MNL
+G and H functions for FC-MNL, parallel versions of the gradients and Hessians ---- is actually slower
 """
 
 from math import log
@@ -72,6 +72,7 @@ def _b_two(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: i
         np.fill_diagonal(db[i, :, :, 0], 0.0)
         np.fill_diagonal(db[i, :, :, 1], 0.0)
     return b, db
+
 
 #
 #
@@ -388,7 +389,7 @@ def fcmnl_generator(U: np.ndarray, b: np.ndarray, sigma: float, tau: float,
             dave_pow, _ = der_nppow(ave, tausig)
             dexpU1 = der_npexp(U1)
             der_generator_U = sig1 * dexpU1 * \
-                (np.sum(b * dave_pow, 0) + np.sum(b * dave_pow, 1)) / 2.0
+                              (np.sum(b * dave_pow, 0) + np.sum(b * dave_pow, 1)) / 2.0
             der_generator_b = ave_pow
             resus.gradients = [der_generator_b, der_generator_U, None, None]
         if order_max >= 2:
@@ -405,7 +406,7 @@ def fcmnl_generator(U: np.ndarray, b: np.ndarray, sigma: float, tau: float,
                 der2_generator_bU[j, j, j] = 2.0 * dave_pow[j, j] * dexpU1[j]
             der2_generator_bU *= (sig1 / 2.0)
             der2_generator_UU = d2ave_pow * b * \
-                np.outer(dexpU1, dexpU1) * (sig1 * sig1 / 2.0)
+                                np.outer(dexpU1, dexpU1) * (sig1 * sig1 / 2.0)
             d2expU1 = der2_npexp(U1)
             for j in range(ncat_partner):
                 bj = b[j, :]
@@ -581,7 +582,7 @@ def hessians_Gx(Uman: np.ndarray, b_man: np.ndarray, db_man: Union[np.ndarray, N
         d2genfun_dbU = resus_x.hessians[0]
         d2genfun_dbU_p = np.einsum('ijk, ijl->kl', db_man, d2genfun_dbU)
         d2G_dU = nx_fx * d2genfun_dbU_p - nx_fx2 * \
-            np.outer(dgenfun_db_p, dgenfun_dU)
+                 np.outer(dgenfun_db_p, dgenfun_dU)
         return (Gval, gradG_d, gradG_U, d2G_dU, d2G_UU)
     else:
         return (Gval, None, gradG_U, None, d2G_UU)
@@ -631,15 +632,23 @@ def hessians_Hy(Vwoman: np.ndarray, b_woman: np.ndarray, db_woman: Union[np.ndar
         d2genfun_dbV = resus_y.hessians[0]
         d2genfun_dbV_p = np.einsum('ijk, ijl->kl', db_woman, d2genfun_dbV)
         d2H_dV = my_fy * d2genfun_dbV_p - my_fy2 * \
-            np.outer(dgenfun_db_p, dgenfun_dV)
+                 np.outer(dgenfun_db_p, dgenfun_dV)
         return (Hval, gradH_d, gradH_V, d2H_dV, d2H_VV)
     else:
         return (Hval, None, gradH_V, None, d2H_VV)
 
 
+def hessians_Gx_parallel(*args_mp):
+    return hessians_Gx(*args_mp)
+
+
+def hessians_Hy_parallel(*args_mp):
+    return hessians_Hy(*args_mp)
+
+
 def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.ndarray,
                         pars_b_men: np.ndarray, pars_b_women: np.ndarray,
-                        derivs: int = 1) -> DerivsGHReturn:
+                        derivs: int = 1, n_cpus: int = 1) -> DerivsGHReturn:
     """
     evaluates values and derivatives of G_b(U) and H_b(Phi-U) for the FC-MNL model
 
@@ -663,7 +672,7 @@ def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.n
              and the d2G(X,Y,Y) and d2H(Y,X,X)
     """
     men_margins, women_margins = model_params.men_margins, \
-        model_params.women_margins
+                                 model_params.women_margins
     ncat_men, ncat_women = men_margins.size, women_margins.size
     n_prod_categories = ncat_men * ncat_women
     make_b = model_params.make_b
@@ -747,11 +756,22 @@ def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.n
             else:
                 db_men_used = [None] * ncat_men  # no derivatives
 
+        if n_cpus > 1:
+            used_cpus = min(n_cpus,   mp.cpu_count()- 1)
+            # print_stars(f"Parallel on {used_cpus} cores")
+        else:
+            used_cpus = 1
+
+        args_mp = [[Umat[iman, :], b_men[iman, :, :],
+                    db_men_used[iman], men_margins[iman], sigma, tau] for iman in range(ncat_men)]
+
+        with mp.Pool(processes=used_cpus) as pool:
+            hessians_Gx_results = pool.starmap(hessians_Gx_parallel, args_mp)
+
         Gval = 0.0
         ivar = 0
         for iman in range(ncat_men):
-            hess_Gx_man = hessians_Gx(Umat[iman, :], b_men[iman, :, :],
-                                          db_men_used[iman], men_margins[iman], sigma, tau)
+            hess_Gx_man = hessians_Gx_results[iman]
             slice_man = slice(ivar, ivar + ncat_women)
             Gval += hess_Gx_man[0]
             gradG_U[iman, :] = hess_Gx_man[2]
@@ -765,10 +785,15 @@ def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.n
         else:
             db_women_used = [None] * ncat_women  # no derivatives
 
+        args_mp = [[Vmat[:, iwoman], b_women[iwoman, :, :],
+                                        db_women_used[iwoman], women_margins[iwoman], sigma, tau]
+                   for iwoman in range(ncat_women)]
+
+        with mp.Pool(processes=used_cpus) as pool:
+            hessians_Hy_results = pool.starmap(hessians_Hy_parallel, args_mp)
         Hval = 0.0
         for iwoman in range(ncat_women):
-            hess_Hy_woman = hessians_Hy(Vmat[:, iwoman], b_women[iwoman, :, :],
-                                            db_women_used[iwoman], women_margins[iwoman], sigma, tau)
+            hess_Hy_woman = hessians_Hy_results[iwoman]
             slice_woman = slice(iwoman, n_prod_categories, ncat_women)
             Hval += hess_Hy_woman[0]
             gradH_V[:, iwoman] = hess_Hy_woman[2]
@@ -831,7 +856,7 @@ if __name__ == "__main__":
     for ix in range(ncat_men):
         for iy in range(ncat_women):
             bases_surplus[ix, iy, 3] = (x_men[ix] - y_women[iy]) \
-                * (x_men[ix] - y_women[iy])
+                                       * (x_men[ix] - y_women[iy])
 
     men_margins = np.random.uniform(1.0, 10.0, size=ncat_men)
     women_margins = np.random.uniform(1.0, 10.0, size=ncat_women)
@@ -885,7 +910,7 @@ if __name__ == "__main__":
             resus1 = fcmnl_generator(U_man0, b_man1, sigma, tau, derivs=None)
             grad_b_num[iwoman1, iwoman2] = (resus1.value - resus0.value) / EPS
 
-    error_grad_b = (grad_b_num - grad_b)/grad_b_num
+    error_grad_b = (grad_b_num - grad_b) / grad_b_num
     describe_array(error_grad_b, "error grad_b")
 
     for iwoman in range(ncat_women):
@@ -894,7 +919,7 @@ if __name__ == "__main__":
         resus1 = fcmnl_generator(U_man1, b_man0, sigma, tau, derivs=None)
         grad_U_num[iwoman] = (resus1.value - resus0.value) / EPS
 
-    error_grad_U = (grad_U_num - grad_U)/grad_U_num
+    error_grad_U = (grad_U_num - grad_U) / grad_U_num
     describe_array(error_grad_U, "error grad_U")
 
     hess_bU_num = np.empty((ncat_women, ncat_women, ncat_women))
@@ -904,8 +929,7 @@ if __name__ == "__main__":
         U_man1 = U_man0.copy()
         U_man1[iwoman] += EPS
         resus1 = fcmnl_generator(U_man1, b_man0, sigma, tau, derivs=1)
-        hess_UU_num[iwoman, :] = (
-            resus1.gradients[1] - resus0.gradients[1]) / EPS
+        hess_UU_num[iwoman, :] = (resus1.gradients[1] - resus0.gradients[1]) / EPS
 
     error_hess_UU = hess_UU_num - hess_UU
     describe_array(error_hess_UU, "error hess_UU")
@@ -915,8 +939,7 @@ if __name__ == "__main__":
             b_man1 = b_man0.copy()
             b_man1[iwoman1, iwoman2] += EPS
             resus1 = fcmnl_generator(U_man0, b_man1, sigma, tau, derivs=1)
-            hess_bU_num[iwoman1, iwoman2, :] = (
-                resus1.gradients[1] - resus0.gradients[1]) / EPS
+            hess_bU_num[iwoman1, iwoman2, :] = (resus1.gradients[1] - resus0.gradients[1]) / EPS
 
     error_hess_bU = hess_bU_num - hess_bU
     describe_array(error_hess_bU, "error hess_bU")
@@ -941,7 +964,7 @@ if __name__ == "__main__":
             gradG_U1 = res_ders1.gradients[1]
             d2G_dU_num[:, i] = (gradG_d1 - gradG_d) / EPS
             d2G_UU_num[:, i] = (
-                gradG_U1 - gradG_U).reshape(n_prod_categories) / EPS
+                                       gradG_U1 - gradG_U).reshape(n_prod_categories) / EPS
             i += 1
 
     error_d2G_dU = d2G_dU_num - d2G_dU
@@ -964,7 +987,7 @@ if __name__ == "__main__":
             gradH_V1 = res_ders1.gradients[3]
             d2H_dV_num[:, i] = -(gradH_d1 - gradH_d) / EPS
             d2H_VV_num[:, i] = - \
-                (gradH_V1 - gradH_V).reshape(n_prod_categories) / EPS
+                                   (gradH_V1 - gradH_V).reshape(n_prod_categories) / EPS
             i += 1
 
     error_d2H_dV = d2H_dV_num - d2H_dV
@@ -972,3 +995,13 @@ if __name__ == "__main__":
 
     error_d2H_VV = d2H_VV_num - d2H_VV
     describe_array(error_d2H_VV, "error d2H_VV")
+
+    from time import time
+    start = time()
+    for i in range(3):
+        res_ders0 = derivs_GplusH_fcmnl(U_init, model_params_fcmnl, Phi, pars_b_men, pars_b_women,
+                                        derivs=2, n_cpus=2)
+    end = time()
+    print(f"\n\nTook {(end - start)/i} seconds")
+
+

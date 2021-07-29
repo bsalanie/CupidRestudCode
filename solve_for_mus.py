@@ -276,8 +276,8 @@ def mus_fcmnl_and_maybe_grad_agd(params: np.ndarray, model_params: CupidParamsFc
             resus_ders = derivs_GplusH_fcmnl(U_conv, model_params, Phi, pars_b_men, pars_b_women,
                                              derivs=1)
             muxy = resus_ders.gradients[1]  # this is mu = G_U
-            print(
-                f" gradient  has norm {np.linalg.norm(muxy - resus_ders.gradients[3])}")
+            if verbose:
+                print(f" gradient  has norm {np.linalg.norm(muxy - resus_ders.gradients[3])}")
             mux0 = men_margins - np.sum(muxy, 1)
             mu0y = women_margins - np.sum(muxy, 0)
             mus = MatchingMus(muxy, mux0, mu0y)
@@ -466,7 +466,8 @@ if __name__ == "__main__":
                                         n_pars_b_women=n_pars_b_women,
                                         make_b=make_b,
                                         observed_matching=None,
-                                        mus_and_maybe_grad=mus_fcmnl_and_maybe_grad_agd, tol_agd=1e-12)
+                                        mus_and_maybe_grad=mus_fcmnl_and_maybe_grad_agd,
+                                        tol_agd=1e-12)
 
         n_params = n_pars_b + n_bases
         params = np.zeros(n_params)

@@ -45,7 +45,7 @@ class CupidParamsFcmnl(CupidParams):
     """
     additional parameters for the FC-MNL model; defaults as in Davis and Schiraldi
     """
-    tol_agd: Optional[float] = 1e-9
+    tol_agd: Optional[float] = 1e-12          # inner minimization must be done with high precision
     sigma: Optional[float] = 0.5
     tau: Optional[float] = 1.1
     n_pars_b_men: Optional[int] = None
