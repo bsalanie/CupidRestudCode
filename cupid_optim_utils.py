@@ -52,7 +52,7 @@ def acc_grad_descent(grad_f: Callable, x_init: np.ndarray,
                      prox_h: Optional[Callable] = None, other_params: Optional[Any] = None,
                      print_result: Optional[bool] = False, verbose: Optional[bool] = False,
                      tol: Optional[float] = 1e-9, alpha: Optional[float] = 1.01, beta: Optional[float] = 0.5,
-                     maxiter: Optional[int] = 10000) -> Tuple[np.ndarray, int]:
+                     maxiter: Optional[int] = 100000) -> Tuple[np.ndarray, int]:
     """
     minimizes :math:`(f+h)` by Accelerated Gradient Descent
      where `f` is smooth and convex  and `h` is convex.

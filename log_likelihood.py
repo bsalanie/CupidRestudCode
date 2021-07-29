@@ -49,6 +49,8 @@ def grad_log_likelihood(kc, cb, eval_request, eval_result, model_params):
               eval_request.type)
         return -1
     params = eval_request.x
+    
+    np.savetxt("current_pars.txt", params)
 
     mus_and_maybe_grad = model_params.mus_and_maybe_grad
     bases_surplus = model_params.bases_surplus

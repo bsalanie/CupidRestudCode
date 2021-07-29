@@ -26,9 +26,9 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 results_dir = root_dir / "Results"
 
 do_ChooSiow_homoskedastic = False
-do_ChooSiow_gender_heteroskedastic = True
-do_ChooSiow_gender_age_heteroskedastic = True
-do_maxi_fcmnl = False
+do_ChooSiow_gender_heteroskedastic = False
+do_ChooSiow_gender_age_heteroskedastic = False
+do_maxi_fcmnl = True
 
 # first, read the data
 data_dir = root_dir / "Data" / "Output"
@@ -259,7 +259,7 @@ if do_maxi_fcmnl:
         if do_maxi_fcmnl:
             loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, x_init,
                                                                           lower=lower, upper=upper,
-                                                                          checkgrad=True,
+                                                                          checkgrad=False,
                                                                           verbose=True)
             print_stars(f"Return status: {status_fcmnl}")
 
