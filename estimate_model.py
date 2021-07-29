@@ -96,26 +96,3 @@ def maximize_loglik(model_params: Union[CupidParams, CupidParamsCSHeteroxy, Cupi
 
     return loglik_val, np.array(estimates), nStatus
 
-
-# def evaluate_loglik(model_params: Union[CupidParams, CupidParamsCSHeteroxy, CupidParamsFcmnl],
-#                     x_values: np.ndarray) -> Tuple[float, np.ndarray, int]:
-#     """
-#     evaluates the log-likelihood at a set of values
-
-#     :param model_params: the model we use
-
-#     :param x_values: initial values of parameters, an (m, p) or (p) array
-
-#     :return: the values of the log-likelihood
-#     """
-#     if x_values.ndim == 1:
-#         return -log_likelihood(x_values, [model_params])
-#     elif x_values.ndim == 2:
-#         m = x_values.shape[0]
-#         ll_values = np.zeros(m)
-#         for i in range(m):
-#             ll_values[i] = -log_likelihood(x_values[i], [model_params])
-#         return ll_values
-#     else:
-#         bs_error_abort(
-#             f"x_values hould have 1 or 2 dimensions, not {x_values.ndim}")

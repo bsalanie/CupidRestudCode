@@ -28,6 +28,11 @@ def fc_dist(ncat_partner: int) -> np.ndarray:
     return distances
 
 
+#
+#
+#  each _b_XX function fills the b matrix and its derivatives: with 0, 1, 2 parameters
+#
+#
 def _b_zero(ncat: int, ncat_partner: int) -> np.ndarray:
     b = np.zeros((ncat, ncat_partner, ncat_partner))
     for i in range(ncat):
@@ -39,10 +44,11 @@ def _b_one(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: i
     par_b0 = pars_b[0]
     b = np.zeros((ncat, ncat_partner, ncat_partner))
     db = np.zeros((ncat, ncat_partner, ncat_partner, 1))
-    # we need 1.0 on the diagonals, with 0 derivatives
+
     for i in range(ncat):
         b[i, :, :] = par_b0 / distances
         db[i, :, :, 0] = 1.0 / distances
+        # we need 1.0 on the diagonals, with 0 derivatives
         np.fill_diagonal(b[i, :, :], 1.0)
         np.fill_diagonal(db[i, :, :, 0], 0.0)
     return b, db
@@ -55,22 +61,28 @@ def _b_two(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: i
     db = np.zeros((ncat, ncat_partner, ncat_partner, 2))
     xvec = np.arange(ncat) / (ncat - 1.0)
     par_bx = xvec * par_b1 + (1.0 - xvec) * par_b0
-    # we need 1.0 on the diagonals, with 0 derivatives
+
     for i in range(ncat):
         b[i, :, :] = par_bx[i] / distances
         xi = xvec[i]
         db[i, :, :, 0] = (1.0 - xi) / distances
         db[i, :, :, 1] = xi / distances
+        # we need 1.0 on the diagonals, with 0 derivatives
         np.fill_diagonal(b[i, :, :], 1.0)
         np.fill_diagonal(db[i, :, :, 0], 0.0)
         np.fill_diagonal(db[i, :, :, 1], 0.0)
     return b, db
 
+#
+#
+# each make_bX function compute b = p/fc_dist and its derivatives for both sides, for specification bX
+#
+#
 
 def make_b0(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, ncat_women: int) \
         -> Tuple[np.ndarray, Union[np.ndarray, None], np.ndarray, Union[np.ndarray, None]]:
     """
-    compute b = p/fc_dist and its derivatives for both side, orders (1,0)
+    compute b = p/fc_dist and its derivatives for both sides, orders (0,0)
 
     :param np.ndarray pars_b_men: parameters of b for men
 
@@ -89,8 +101,6 @@ def make_b0(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
     if n_pars_b_women != 0:
         bs_error_abort(f"we need n_pars_b_women = 0 not {n_pars_b_women}")
 
-    fc_dist_women = fc_dist(ncat_women)
-
     b_men = _b_zero(ncat_men, ncat_women)
     b_women = _b_zero(ncat_women, ncat_men)
 
@@ -100,7 +110,7 @@ def make_b0(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
 def make_b1(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, ncat_women: int) \
         -> Tuple[np.ndarray, Union[np.ndarray, None], np.ndarray, Union[np.ndarray, None]]:
     """
-    compute b = p/fc_dist and its derivatives for both side, orders (1,0)
+    compute b = p/fc_dist and its derivatives for both sides, orders (1,0)
 
     :param np.ndarray pars_b_men: parameters of b for men
 
@@ -266,9 +276,9 @@ def make_b6(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
     n_pars_b_men, n_pars_b_women = pars_b_men.size, pars_b_women.size
 
     if n_pars_b_men != 2:
-        bs_error_abort(f"we need n_pars_b_men = 0 not {n_pars_b_men}")
+        bs_error_abort(f"we need n_pars_b_men = 2 not {n_pars_b_men}")
     if n_pars_b_women != 1:
-        bs_error_abort(f"we need n_pars_b_women = 2 not {n_pars_b_women}")
+        bs_error_abort(f"we need n_pars_b_women = 1 not {n_pars_b_women}")
 
     fc_dist_men = fc_dist(ncat_men)
     fc_dist_women = fc_dist(ncat_women)
@@ -297,7 +307,7 @@ def make_b7(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
     n_pars_b_men, n_pars_b_women = pars_b_men.size, pars_b_women.size
 
     if n_pars_b_men != 1:
-        bs_error_abort(f"we need n_pars_b_men = 0 not {n_pars_b_men}")
+        bs_error_abort(f"we need n_pars_b_men = 1 not {n_pars_b_men}")
     if n_pars_b_women != 2:
         bs_error_abort(f"we need n_pars_b_women = 2 not {n_pars_b_women}")
 
@@ -328,7 +338,7 @@ def make_b8(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
     n_pars_b_men, n_pars_b_women = pars_b_men.size, pars_b_women.size
 
     if n_pars_b_men != 2:
-        bs_error_abort(f"we need n_pars_b_men = 0 not {n_pars_b_men}")
+        bs_error_abort(f"we need n_pars_b_men = 2 not {n_pars_b_men}")
     if n_pars_b_women != 2:
         bs_error_abort(f"we need n_pars_b_women = 2 not {n_pars_b_women}")
 
@@ -819,9 +829,9 @@ def grad_GplusH_fcmnl(U: np.ndarray,
 
 if __name__ == "__main__":
 
-    make_b = make_b4
-    pars_b_women = np.array([0.2])
-    pars_b_men = np.array([0.2])
+    make_b = make_b8
+    pars_b_women = np.array([0.1, 0.1])
+    pars_b_men = np.array([0.1, 0.1])
 
     # we generate a Choo and Siow homo matching
     ncat_men = ncat_women = 5
@@ -895,7 +905,7 @@ if __name__ == "__main__":
             resus1 = fcmnl_generator(U_man0, b_man1, sigma, tau, derivs=None)
             grad_b_num[iwoman1, iwoman2] = (resus1.value - resus0.value) / EPS
 
-    error_grad_b = grad_b_num - grad_b
+    error_grad_b = (grad_b_num - grad_b)/grad_b_num
     describe_array(error_grad_b, "error grad_b")
 
     for iwoman in range(ncat_women):
@@ -904,7 +914,7 @@ if __name__ == "__main__":
         resus1 = fcmnl_generator(U_man1, b_man0, sigma, tau, derivs=None)
         grad_U_num[iwoman] = (resus1.value - resus0.value) / EPS
 
-    error_grad_U = grad_U_num - grad_U
+    error_grad_U = (grad_U_num - grad_U)/grad_U_num
     describe_array(error_grad_U, "error grad_U")
 
     hess_bU_num = np.empty((ncat_women, ncat_women, ncat_women))

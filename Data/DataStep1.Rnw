@@ -21,7 +21,7 @@
 \begin{abstract}
 We set up the data for the empirical application in our ``Cupid's Invisible Hand'' paper. This data is very similar to that used in Choo and Siow's 2006 {\em Journal of Political Economy\/} article.
 
-This document details the first step of the construction, which turns the Stata files in the \texttt{Input}  subfolder of \texttt{Data}  into the CSV files in the \texttt{Intermediate}  subfolder.
+This document details the first step of the construction, which turns the CSV files in the \texttt{Input}  subfolder of \texttt{Data}  into the CSV files in the \texttt{Intermediate}  subfolder.
 
 The Python program \verb|make_files_for_estimation.py| manages the second step and produces the text files in the \texttt{Output} subfolder of \texttt{Data}.
 
@@ -31,15 +31,15 @@ The Python program \verb|make_files_for_estimation.py| manages the second step a
 
 
 \section{Working with the  Data}
-For each year $Y$=71, 72, 81, 82, we 
-downloaded   three Stata datafiles from the Vital Statistics marriage data center:
+For each year $Y$=71, 72, we 
+downloaded   three  datafiles from the Vital Statistics marriage data center.
 \begin{itemize}
-\item the main file, \texttt{marrY.dta}, contains the variables
+\item the main file, \texttt{marrY.csv}, contains the variables
 \texttt{year, statemarr,  samplingweight} and  \texttt{husbreform,
   husbforeign,  husbresidstate, husbagemarr, husbrace2, husbeduc} along with the wife variables. It discards all marriages between two foreign partners, where ``foreign'' is everyone who is not in the list of states we use (see online appendix G.3 of our paper, or the variable \texttt{listStates} below).
-  \item the files \texttt{husbforeignY.dta} and  \texttt{wifeforeignY.dta} have the same variables; they have marriages with only one ``foreign partner''  (which are also in the corresponding \texttt{marrY.dta} file.) We add these foreign partners to the availables in their residence state. We will deal with the corresponding marriages in \texttt{DataStep2.py}.
+  \item the files \texttt{husbforeignY.csv} and  \texttt{wifeforeignY.csv} have the same variables; they have marriages with only one ``foreign partner''  (which are also in the corresponding \texttt{marrY.csv} file.) We add these foreign partners to the availables in their residence state. We will deal with the corresponding marriages in \texttt{DataStep2.py}.
 \end{itemize}
-In addition, we have one file from the ACS 1970 and 1980: \texttt{IpumsAvailables.dta}. This has variables \texttt{year, statefip, age, sex, agemarr, marrno}, \texttt{race, serial, myperwt, relate}, \texttt{hispan, educd, school, prevmarr, reform} for each person aged 16-75 who is in a Choo-Siow state and  available for marriage (that is, not married). The weight \texttt{myperwt} is 20 or 50.
+In addition, we have one file from the ACS 1970: \texttt{IpumsAvailables.csv}. This has variables \textttstatefip, age, sex, agemarr, marrno}, \texttt{race, serial, myperwt, relate}, \texttt{hispan, educd, prevmarr, reform} for each person aged 16-75 who is in a Choo-Siow state and  available for marriage (that is, not married). The weight \texttt{myperwt} is 20 or 50.
 
 First we read them in, convert them to \texttt{R} datafiles, and add the foreigners to the availables. We drop  the race and education variables.
 We also recode all state numbers so they refer to the Census codes; the translation stuff is stored in \texttt{listStates.RData}. And we drop marriages in New York City (we do not use New York State anyway.)
@@ -50,16 +50,15 @@ In the end we get a file \texttt{ChooSiowAvailables.csv}  that has year of ACS, 
 
 <<convertStataFiles, echo=T>>=
 
-inputs_dir <- "./Input/"
-outputs_dir <- "./Intermediate/"
+inputs_dir <- "../../Data/Raw"
+outputs_dir <- "../../Intermediate/"
 
 library(foreign)
 ## first read ACS availables file
-CSipums <- read.dta(file=paste(inputs_dir, 
-                               "IpumsAvailables.dta", sep=''))
+CSipums <- read.csv(file=paste(inputs_dir, 
+                               "IpumsAvailables.csv", sep=''))
 ## drop race and education
-CSipums <- data.frame(year=CSipums$year,
-                      state=as.numeric(CSipums$statefip),
+CSipums <- data.frame(state=as.numeric(CSipums$statefip),
                        age=CSipums$age,sex=CSipums$sex,
                        weight=CSipums$myperwt,
                       reform=CSipums$reform)
@@ -127,8 +126,8 @@ recodeState <- function(vsState) {
 
 ## now read files from Vital Stats
 ## and add in the foreign partners
-for (iyear in c(71,72,81,82)) {
-  marrFile <- read.dta(file=paste(inputs_dir, "marr",iyear,".dta",sep=''))
+for (iyear in c(71,72)) {
+  marrFile <- read.csv(file=paste(inputs_dir, "marr",iyear,".csv",sep=''))
   # we only need those variables
   marrFile <- subset(marrFile, select=c(husbresidstate, wiferesidstate, 
                                         statemarr, year,
@@ -148,29 +147,26 @@ for (iyear in c(71,72,81,82)) {
   if (iyear==71) {
     marrData <- marrFile
   }
-  if (iyear > 71) {
+  if (iyear==72) {
     marrData <- rbind(marrData,marrFile)
   }
-  mywt <- ifelse((iyear < 75),50,20)
-  myyear <- ifelse((iyear < 75),1970,1980) 
-  husbforeignFile <- read.dta(file=paste(inputs_dir, 
+  mywt <- 50
+  husbforeignFile <- read.csv(file=paste(inputs_dir, 
                                          "husbforeign",
-                                         iyear,".dta",sep=''))
+                                         iyear,".csv",sep=''))
   nhusbForeign <- NROW(husbforeignFile)
   recodedHusbState <- recodeState(husbforeignFile$husbresidstate)
-  husbAvail <- data.frame(year=myyear+numeric(nhusbForeign),
-                          state=recodedHusbState,
+  husbAvail <- data.frame(state=recodedHusbState,
                           age=husbforeignFile$husbagemarr,
                           sex=1+numeric(nhusbForeign),
                           weight=mywt+numeric(nhusbForeign),
                           reform=husbforeignFile$husbreform)
-  wifeforeignFile <- read.dta(file=paste(inputs_dir,
+  wifeforeignFile <- read.csv(file=paste(inputs_dir,
                                          "wifeforeign",
-                                         iyear,".dta",sep=''))
+                                         iyear,".csv",sep=''))
   nwifeForeign <- NROW(wifeforeignFile)
   recodedWifeState <- recodeState(wifeforeignFile$wiferesidstate)
-  wifeAvail <- data.frame(year=myyear+numeric(nwifeForeign),
-                          state=recodedWifeState,
+  wifeAvail <- data.frame(state=recodedWifeState,
                           age=wifeforeignFile$wifeagemarr,
                           sex=2+numeric(nwifeForeign),
                           weight=mywt+numeric(nwifeForeign),
@@ -184,61 +180,37 @@ for (iyear in c(71,72,81,82)) {
 Now we replicate the numbers in Choo and Siow's Table~2. 
 <<doTable2,echo=T>>=
 availMenR70 <- 
-  sum((CSipums$sex==1 & CSipums$year==1970 & CSipums$reform==1)*
-        CSipums$weight)
-availMenR80 <- 
-  sum((CSipums$sex==1 & CSipums$year==1980 & CSipums$reform==1)*
+  sum((CSipums$sex==1 & CSipums$reform==1)*
         CSipums$weight)
 availMenN70 <- 
-  sum((CSipums$sex==1 & CSipums$year==1970 & CSipums$reform==0)*
-        CSipums$weight)
-availMenN80 <- 
-  sum((CSipums$sex==1 & CSipums$year==1980 & CSipums$reform==0)*
+  sum((CSipums$sex==1 &  CSipums$reform==0)*
         CSipums$weight)
 availWomenR70 <- 
-  sum((CSipums$sex==2 & CSipums$year==1970 & CSipums$reform==1)*
-        CSipums$weight)
-availWomenR80 <- 
-  sum((CSipums$sex==2 & CSipums$year==1980 & CSipums$reform==1)*
+  sum((CSipums$sex==2 &  CSipums$reform==1)*
         CSipums$weight)
 availWomenN70 <- 
-  sum((CSipums$sex==2 & CSipums$year==1970 & CSipums$reform==0)*
-        CSipums$weight)
-availWomenN80 <- 
-  sum((CSipums$sex==2 & CSipums$year==1980 & CSipums$reform==0)*
+  sum((CSipums$sex==2  & CSipums$reform==0)*
         CSipums$weight)
 
 marrRR70 <- 
-  sum((marrData$husbreform==1 & marrData$wifereform==1 & marrData$year < 1975)*
+  sum((marrData$husbreform==1 & marrData$wifereform==1)*
       marrData$samplingweight)
 marrRN70 <- 
-  sum((marrData$husbreform==1 & marrData$wifereform==0 & marrData$year < 1975)*
+  sum((marrData$husbreform==1 & marrData$wifereform==0)*
       marrData$samplingweight)
 marrNR70 <- 
-  sum((marrData$husbreform==0 & marrData$wifereform==1 & marrData$year < 1975)*
+  sum((marrData$husbreform==0 & marrData$wifereform==1)*
       marrData$samplingweight)
 marrNN70 <- 
-  sum((marrData$husbreform==0 & marrData$wifereform==0 & marrData$year < 1975)*
+  sum((marrData$husbreform==0 & marrData$wifereform==0)*
       marrData$samplingweight)
-marrRR80 <- 
-  sum((marrData$husbreform==1 & marrData$wifereform==1 & marrData$year > 1975)*
-      marrData$samplingweight)
-marrRN80 <- 
-  sum((marrData$husbreform==1 & marrData$wifereform==0 & marrData$year > 1975)*
-      marrData$samplingweight)
-marrNR80 <- 
-  sum((marrData$husbreform==0 & marrData$wifereform==1 & marrData$year > 1975)*
-      marrData$samplingweight)
-marrNN80 <- 
-  sum((marrData$husbreform==0 & marrData$wifereform==0 & marrData$year > 1975)*
-      marrData$samplingweight)
-@
-We have \Sexpr{availMenR70} men available in 1970 in reform states, and \Sexpr{availMenN70} in non-reform  states. In 1980 there are \Sexpr{availMenR80} and \Sexpr{availMenN80}. For women the numbers are  \Sexpr{availWomenR70}
-and \Sexpr{availWomenN70} in 1970, and \Sexpr{availWomenR80}  and \Sexpr{availWomenN80} in 1980.
 
-Choo and Siow impute one marriage in each cell where there is none, which we did not do here. Our  numbers of marriages RR were \Sexpr{marrRR70} in 1971--72, 
-and \Sexpr{marrRR80} in 1981--82; for NN they were \Sexpr{marrNN70} in 1971--72, 
-and \Sexpr{marrNN80} in 1981--82.
+@
+We have \Sexpr{availMenR70} men available in 1970 in reform states, and \Sexpr{availMenN70} in non-reform  states. For women the numbers are  \Sexpr{availWomenR70}
+and \Sexpr{availWomenN70}.
+
+Choo and Siow impute one marriage in each cell where there is none, which we did not do here. Our  numbers of marriages RR were \Sexpr{marrRR70} in 1971--72; for NN they 
+were \Sexpr{marrNN70}.
 
 These numbers are very close to Choo and Siow's.
 

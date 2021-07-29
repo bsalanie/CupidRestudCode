@@ -14,7 +14,7 @@ from cupid_optim_utils import acc_grad_descent
 from ipfp_solvers import ipfp_homo_solver, \
     ipfp_hetero_solver, ipfp_heteroxy_solver
 from fcmnl import grad_GplusH_fcmnl, \
-    make_b1, make_b2, make_b3, make_b4, make_b5, derivs_GplusH_fcmnl
+    make_b1, make_b2, make_b3, make_b4, make_b5, make_b8, derivs_GplusH_fcmnl
 
 # this is the type each mus_XXX function returns
 MusReturn = Union[Tuple[MatchingMus, np.ndarray,
@@ -450,9 +450,9 @@ if __name__ == "__main__":
         # test FCMNL
         print_stars("Checking the FCMNL model")
 
-        make_b = make_b4
-        par_b_men = [0.3]
-        par_b_women = [0.2]
+        make_b = make_b8
+        par_b_men = [0.1, 0.1]
+        par_b_women = [0.1, 0.1]
 
         pars_b_men_arr = np.array(par_b_men)
         pars_b_women_arr = np.array(par_b_women)
@@ -466,7 +466,7 @@ if __name__ == "__main__":
                                         n_pars_b_women=n_pars_b_women,
                                         make_b=make_b,
                                         observed_matching=None,
-                                        mus_and_maybe_grad=mus_fcmnl_and_maybe_grad_agd)
+                                        mus_and_maybe_grad=mus_fcmnl_and_maybe_grad_agd, tol_agd=1e-12)
 
         n_params = n_pars_b + n_bases
         params = np.zeros(n_params)
@@ -502,10 +502,3 @@ if __name__ == "__main__":
     dmu0y = dmus.mu0y
     error_dmu0y = dmu0y_num - dmu0y
     describe_array(error_dmu0y, "error dmu0y")
-
-    # print(f"12 is:")
-    # print(np.column_stack((dmux0[12, :], dmux0_num[12, :])))
-    #
-    # print(f"13 is:")
-    # print(np.column_stack((dmu0y[13, :], dmu0y_num[13, :])))
-    # bs_error_abort("done")
