@@ -175,7 +175,7 @@ if do_ChooSiow_gender_age_heteroskedastic:
                     do_stderrs=True,  varmus=varmus, save=True)
 
 if do_maxi_fcmnl:
-    for b_case in [5]:
+    for b_case in [8]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
@@ -257,7 +257,7 @@ if do_maxi_fcmnl:
         if do_maxi_fcmnl:
             loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, x_init,
                                                                           lower=lower, upper=upper,
-                                                                          checkgrad=False,
+                                                                          checkgrad=True,
                                                                           verbose=True)
             print_stars(f"Return status: {status_fcmnl}")
 

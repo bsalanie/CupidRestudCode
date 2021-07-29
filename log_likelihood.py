@@ -71,10 +71,10 @@ def grad_log_likelihood(kc, cb, eval_request, eval_result, model_params):
 
     eval_result.objGrad = -(der_muxy + der_mux0 + der_mu0y)
 
-#    n_pars_b = 2
-#    print("grad_log_mus : done")
-#    for i in range(n_pars_b):
-#        print(f"Coeff[{i}] = {params[i]: > 10.3f}")
+    n_pars_b = 4
+    print("grad_log_mus : done")
+    for i in range(n_pars_b):
+        print(f"Coeff[{i}] = {params[i]: > 10.3f}, gradient: {eval_result.objGrad[i]: > 10.3f}")
 
     return 0
 
