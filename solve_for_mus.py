@@ -265,13 +265,15 @@ def mus_fcmnl_and_maybe_grad_agd(params: np.ndarray, model_params: CupidParamsFc
         U_hat_homo = np.log(mu_rat)
         U_init = U_hat_homo.reshape(n_prod_categories)/model_params.tau
 
-    # U_conv, ret_code = \
-    #     acc_grad_descent(grad_GplusH_fcmnl, U_init, other_params=(model_params, Phi, pars_b_men, pars_b_women),
-    #                      verbose=False, print_result=True, tol=tol)
+    U_conv, ret_code = acc_grad_descent(grad_GplusH_fcmnl, U_init,
+                                        other_params=(model_params, Phi,
+                                                      pars_b_men, pars_b_women),
+                                        verbose=False, print_result=True,
+                                        tol=tol)
 
-    U_conv, ret_code = \
-        minimize_fcmnl_U(U_init, other_params=(model_params, Phi, pars_b_men, pars_b_women),
-                         verbose=False)
+    # U_conv, ret_code = \
+    #     minimize_fcmnl_U(U_init, other_params=(model_params, Phi, pars_b_men, pars_b_women),
+    #                      verbose=False)
 
     if ret_code == 0:
         if verbose:

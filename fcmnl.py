@@ -715,7 +715,8 @@ def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.n
                                        men_margins[iman], sigma, tau)
             Gval += grad_Gx_man[0]
             gradG_U[iman, :] = grad_Gx_man[2]
-            gradG_d[:n_pars_b_men] += grad_Gx_man[1]  # does nothing if n_pars_b_men = 0
+            if n_pars_b_men > 0:
+                gradG_d[:n_pars_b_men] += grad_Gx_man[1]
 
         if n_pars_b_women > 0:
             db_women_used = [db_women[iwoman, :, :, :] for iwoman in range(ncat_women)]
@@ -728,7 +729,8 @@ def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.n
                                          women_margins[iwoman], sigma, tau)
             Hval += grad_Hy_woman[0]
             gradH_V[:, iwoman] = grad_Hy_woman[2]
-            gradH_d[n_pars_b_men:n_pars_b] += grad_Hy_woman[1]  # does nothing if n_pars_b_women = 0
+            if n_pars_b_women > 0:
+                gradH_d[n_pars_b_men:n_pars_b] += grad_Hy_woman[1]
 
         resus_ders.values = [Gval, Hval]
 
@@ -742,10 +744,9 @@ def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.n
         d2H_VV = np.zeros((n_prod_categories, n_prod_categories))
 
         if n_pars_b_men > 0:
-            if n_pars_b_men > 0:
-                db_men_used = [db_men[iman, :, :, :] for iman in range(ncat_men)]
-            else:
-                db_men_used = [None] * ncat_men  # no derivatives
+            db_men_used = [db_men[iman, :, :, :] for iman in range(ncat_men)]
+        else:
+            db_men_used = [None] * ncat_men  # no derivatives
 
         Gval = 0.0
         ivar = 0
@@ -756,8 +757,9 @@ def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.n
             Gval += hess_Gx_man[0]
             gradG_U[iman, :] = hess_Gx_man[2]
             d2G_UU[slice_man, slice_man] = hess_Gx_man[4]
-            gradG_d[:n_pars_b_men] += hess_Gx_man[1]
-            d2G_dU[:n_pars_b_men, slice_man] = hess_Gx_man[3]
+            if n_pars_b_men > 0:
+                gradG_d[:n_pars_b_men] += hess_Gx_man[1]
+                d2G_dU[:n_pars_b_men, slice_man] = hess_Gx_man[3]
             ivar += ncat_women
 
         if n_pars_b_women > 0:
@@ -773,8 +775,9 @@ def derivs_GplusH_fcmnl(U: np.ndarray, model_params: CupidParamsFcmnl, Phi: np.n
             Hval += hess_Hy_woman[0]
             gradH_V[:, iwoman] = hess_Hy_woman[2]
             d2H_VV[slice_woman, slice_woman] = hess_Hy_woman[4]
-            gradH_d[n_pars_b_men:n_pars_b] += hess_Hy_woman[1]
-            d2H_dV[n_pars_b_men:n_pars_b, slice_woman] = hess_Hy_woman[3]
+            if n_pars_b_women > 0:
+                gradH_d[n_pars_b_men:n_pars_b] += hess_Hy_woman[1]
+                d2H_dV[n_pars_b_men:n_pars_b, slice_woman] = hess_Hy_woman[3]
 
         resus_ders.values = [Gval, Hval]
 
