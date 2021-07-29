@@ -15,6 +15,7 @@ from ipfp_solvers import ipfp_homo_solver, \
     ipfp_hetero_solver, ipfp_heteroxy_solver
 from fcmnl import grad_GplusH_fcmnl, \
     make_b1, make_b2, make_b3, make_b4, make_b5, make_b8, derivs_GplusH_fcmnl
+from solve_fcmnl import minimize_fcmnl_U
 
 # this is the type each mus_XXX function returns
 MusReturn = Union[Tuple[MatchingMus, np.ndarray,
@@ -264,9 +265,13 @@ def mus_fcmnl_and_maybe_grad_agd(params: np.ndarray, model_params: CupidParamsFc
         U_hat_homo = np.log(mu_rat)
         U_init = U_hat_homo.reshape(n_prod_categories)/model_params.tau
 
+    # U_conv, ret_code = \
+    #     acc_grad_descent(grad_GplusH_fcmnl, U_init, other_params=(model_params, Phi, pars_b_men, pars_b_women),
+    #                      verbose=False, print_result=True, tol=tol)
+
     U_conv, ret_code = \
-        acc_grad_descent(grad_GplusH_fcmnl, U_init, other_params=(model_params, Phi, pars_b_men, pars_b_women),
-                         verbose=False, print_result=True, tol=tol)
+        minimize_fcmnl_U(U_init, other_params=(model_params, Phi, pars_b_men, pars_b_women),
+                         verbose=False)
 
     if ret_code == 0:
         if verbose:

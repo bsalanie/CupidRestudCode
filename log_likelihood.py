@@ -25,7 +25,7 @@ def log_likelihood(kc, cb, eval_request, eval_result, model_params):
     :return: nothing
     """
     if eval_request.type != KN_RC_EVALFC:
-        print("*** log_mus incorrectly called with eval type %d" %
+        print("*** log_likelihood incorrectly called with eval type %d" %
               eval_request.type)
         return -1
     params = eval_request.x
@@ -45,7 +45,7 @@ def grad_log_likelihood(kc, cb, eval_request, eval_result, model_params):
     :return: nothing
     """
     if eval_request.type != KN_RC_EVALGA:
-        print("*** grad_log_mus incorrectly called with eval type %d" %
+        print("*** grad_log_likelihood incorrectly called with eval type %d" %
               eval_request.type)
         return -1
     params = eval_request.x
