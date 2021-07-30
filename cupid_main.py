@@ -6,13 +6,13 @@ from math import inf
 import numpy as np
 
 from cupid_classes import CupidParams, CupidParamsFcmnl, CupidParamsCSHeteroxy
-from cupid_utils import root_dir, print_stars, bs_error_abort
+from cupid_utils import root_dir, print_stars, bs_error_abort, MIN_MUS_NORM
 
 from read_inputs import read_inputs
 
 from ipfp_solvers import ipfp_homo_solver, ipfp_hetero_solver, ipfp_heteroxy_solver
 
-from estimate_model import maximize_loglik
+from estimate_model import maximize_loglik, maximize_loglik_fcmnl_MPEC
 from analyze_results import analyze_results
 
 from solve_for_mus import mus_choosiow_and_maybe_grad, \
@@ -29,6 +29,7 @@ do_ChooSiow_homoskedastic = False
 do_ChooSiow_gender_heteroskedastic = False
 do_ChooSiow_gender_age_heteroskedastic = False
 do_maxi_fcmnl = True
+do_maxi_fcmnl_MPEC = True
 
 # first, read the data
 data_dir = root_dir / "Data" / "Output"
@@ -176,7 +177,7 @@ if do_ChooSiow_gender_age_heteroskedastic:
                     do_stderrs=True,  varmus=varmus, save=True)
 
 if do_maxi_fcmnl:
-    for b_case in [2]:
+    for b_case in [5]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
@@ -231,21 +232,6 @@ if do_maxi_fcmnl:
         sigma = 0.5
         tau = 1.1
 
-        # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
-        estimates_homo = np.loadtxt(
-            results_dir / "homoskedastic" / "thetas.txt")
-        # they need to be rescaled 
-        x_bases_init = estimates_homo/tau
-
-        x_init = np.concatenate((pars_b_init, x_bases_init))
-
-        n_params = n_pars_b + n_bases
-
-        # bounds on pars_b_men and pars_b_women
-        lower = np.full(n_params, -inf)
-        lower[:n_pars_b] = 0.0
-        upper = np.full(n_params, inf)
-        upper[:n_pars_b] = 0.5
 
         fcmnl_params_norm = CupidParamsFcmnl(men_margins=nx_norm, women_margins=my_norm,
                                              observed_matching=mu_hat_norm,
@@ -258,6 +244,26 @@ if do_maxi_fcmnl:
 
 
         if do_maxi_fcmnl:
+            # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
+            # estimates_homo = np.loadtxt(
+            #    results_dir / "homoskedastic" / "thetas.txt")
+            # they need to be rescaled
+            # x_bases_init = estimates_homo/tau
+
+            x_init = np.loadtxt("current_pars.txt")
+            x_init = x_init[2:]
+            x_init[0] = 0.05
+            x_init[1] = 0.02
+            # x_init = np.concatenate((pars_b_init, x_bases_init))
+
+            n_params = n_pars_b + n_bases
+
+            # bounds on pars_b_men and pars_b_women
+            lower = np.full(n_params, -inf)
+            lower[:n_pars_b] = 0.0
+            upper = np.full(n_params, inf)
+            upper[:n_pars_b] = 0.5
+
             loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, x_init,
                                                                           lower=lower, upper=upper,
                                                                           checkgrad=False,
@@ -268,4 +274,43 @@ if do_maxi_fcmnl:
                             "Fcmnl_b" + str(b_case),
                             results_dir=results_dir,
                             save=True)
+
+
+        if do_maxi_fcmnl_MPEC:
+
+            n_thetas = n_pars_b + n_bases
+            n_prod_categories = ncat_men*ncat_women
+            n_paramsU = n_thetas + n_prod_categories
+
+            # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
+            estimates_homo = np.loadtxt(
+               results_dir / "homoskedastic" / "thetas.txt")
+            # they need to be rescaled
+            x_bases_init = estimates_homo/tau
+
+            thetas_init = np.zeros(n_thetas)
+            thetas_init[0] = 0.01
+            thetas_init[1] = 0.01
+            thetas_init[2:] = x_bases_init
+
+            mu_hat = fcmnl_params_norm.observed_matching
+            if mu_hat is not None:
+                mu_rat = np.maximum(
+                    mu_hat.muxy / ((mu_hat.mux0).reshape((-1, 1))), MIN_MUS_NORM)
+                U_hat_homo = np.log(mu_rat)
+                U_init = U_hat_homo.reshape(n_prod_categories) / tau
+
+            x_init = np.concatenate((thetas_init, U_init))
+
+            # bounds on pars_b_men and pars_b_women
+            lower = np.full(n_paramsU, -inf)
+            lower[:n_pars_b] = 0.0
+            upper = np.full(n_paramsU, inf)
+            upper[:n_pars_b] = 0.5
+
+            loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik_fcmnl_MPEC(fcmnl_params_norm, x_init,
+                                                                          lower=lower, upper=upper,
+                                                                          checkgrad=True,
+                                                                          verbose=True)
+            print_stars(f"Return status: {status_fcmnl}")
 

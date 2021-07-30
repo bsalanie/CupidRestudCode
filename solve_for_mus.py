@@ -255,8 +255,8 @@ def mus_fcmnl_and_maybe_grad_agd(params: np.ndarray, model_params: CupidParamsFc
     surplus_params_vals = params[npars_b:]
     Phi = bases_surplus @ surplus_params_vals
 
-    Phiv = Phi.reshape(n_prod_categories)
-    U_init = Phiv / 2.0
+    # Phiv = Phi.reshape(n_prod_categories)
+    # U_init = Phiv / 2.0
 
     mu_hat = model_params.observed_matching
     if mu_hat is not None:

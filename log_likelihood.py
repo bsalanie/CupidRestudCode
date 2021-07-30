@@ -1,16 +1,15 @@
 """
-defines the Knitro callbacks for :math:`\\log(L)`:  the log-likelihood and its gradient 
+defines the Knitro callbacks for :math:`\\log(L)`:  the log-likelihood and its gradient
 """
 import numpy as np
 
 from knitro.numpy.knitroNumPy import *
 
-
 from cupid_classes import MatchingMus, CupidParamsFcmnl
 from cupid_utils import GRADIENT_STEP, print_stars, describe_array
 from cupid_math_utils import bslog, der_bslog
 from cupid_numpy_utils import nplog, der_nplog
-from fcmnl import make_b8
+from fcmnl import make_b8, derivs_GplusH_fcmnl
 from solve_for_mus import mus_fcmnl_and_maybe_grad_agd
 from ipfp_solvers import ipfp_homo_solver
 from collections import namedtuple
@@ -42,6 +41,7 @@ def grad_log_likelihood(kc, cb, eval_request, eval_result, model_params):
     this is the Knitro callback for the gradient of the loglikelihood
 
     :param CupidParamsXXX model_params: the model data
+
     :return: nothing
     """
     if eval_request.type != KN_RC_EVALGA:
@@ -49,8 +49,8 @@ def grad_log_likelihood(kc, cb, eval_request, eval_result, model_params):
               eval_request.type)
         return -1
     params = eval_request.x
-    
-    np.savetxt("current_pars.txt", params)
+
+    np.savetxt("current_pars_k.txt", params)
 
     mus_and_maybe_grad = model_params.mus_and_maybe_grad
     bases_surplus = model_params.bases_surplus
@@ -67,7 +67,7 @@ def grad_log_likelihood(kc, cb, eval_request, eval_result, model_params):
     gradxy = grad_loglik[:n_prod_categories].reshape(
         (ncat_men, ncat_women)) + gradN
     gradx0 = grad_loglik[n_prod_categories:(
-        n_prod_categories + ncat_men)] + gradN
+            n_prod_categories + ncat_men)] + gradN
     grad0y = grad_loglik[(n_prod_categories + ncat_men):-1] + gradN
 
     der_muxy = np.einsum('ij,ijk->k', gradxy, dmus.muxy)
@@ -97,9 +97,9 @@ def loglik_mus(observed_matching, simulated_matching):
     n_households_obs = np.sum(muxy_obs) + np.sum(mux0_obs) + np.sum(mu0y_obs)
 
     loglik_value = np.sum(muxy_obs * nplog(muxy_sim)) + \
-        np.sum(mux0_obs * nplog(mux0_sim)) + \
-        np.sum(mu0y_obs * nplog(mu0y_sim)) - \
-        n_households_obs * bslog(n_households_sim)
+                   np.sum(mux0_obs * nplog(mux0_sim)) + \
+                   np.sum(mu0y_obs * nplog(mu0y_sim)) - \
+                   n_households_obs * bslog(n_households_sim)
     return loglik_value
 
 
@@ -136,7 +136,6 @@ def grad_loglik_all_mus(observed_matching, simulated_matching):
         -n_households_obs * der_bslog(n_households_sim)
 
     return grad_loglik
-
 
 # if __name__ == "__main__":
 #
