@@ -176,7 +176,7 @@ if do_ChooSiow_gender_age_heteroskedastic:
                     do_stderrs=True,  varmus=varmus, save=True)
 
 if do_maxi_fcmnl:
-    for b_case in [5]:
+    for b_case in [2]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
@@ -232,16 +232,12 @@ if do_maxi_fcmnl:
         tau = 1.1
 
         # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
-        #estimates_homo = np.loadtxt(
-        #    results_dir / "homoskedastic" / "thetas.txt")
+        estimates_homo = np.loadtxt(
+            results_dir / "homoskedastic" / "thetas.txt")
         # they need to be rescaled 
-        #x_bases_init = estimates_homo/tau
+        x_bases_init = estimates_homo/tau
 
-        x_init = np.loadtxt("current_pars.txt")
-        x_init = x_init[2:]
-        x_init[0] = 0.05
-        x_init[1] = 0.02
-        #x_init = np.concatenate((pars_b_init, x_bases_init))
+        x_init = np.concatenate((pars_b_init, x_bases_init))
 
         n_params = n_pars_b + n_bases
 
