@@ -168,14 +168,17 @@ def maximize_loglik_fcmnl_MPEC(model_params: Union[CupidParams, CupidParamsCSHet
         assert fixed_vals is not None
         KN_set_var_fxbnds(kc, fixed_vars, fixed_vals)
 
-    cb = KN_add_eval_callback(kc, evalObj=True, indexCons=range(n_prod_categories),
+    cb = KN_add_eval_callback(kc, evalObj=True,
+                              indexCons=np.arange(n_prod_categories),
                               funcCallback=log_likelihood_fcmnl_MPEC)
 
     KN_set_cb_user_params(kc, cb, model_params)
 
-    n_args_jac = n_thetas + ncat_men + ncat_women
+    # c(x,y) has derivatives in thetas, U(x,t), U(z,y)
+    # dc(x,y)/dU(x,y) may only appear once
+    n_args_jac = n_thetas + ncat_men + ncat_women - 1
     n_jac = n_cons * n_args_jac
-    cbjacIndexCons = np.arange(n_prod_categories, n_args_jac)
+    cbjacIndexCons = np.repeat(np.arange(n_prod_categories), n_args_jac)
     cbjacIndexVars = np.zeros(n_prod_categories * n_args_jac, int)
     i = 0
     for iman in range(ncat_men):
@@ -184,12 +187,18 @@ def maximize_loglik_fcmnl_MPEC(model_params: Union[CupidParams, CupidParamsCSHet
             cbjacIndexVars[i:(i+n_thetas)] = np.arange(n_thetas)
             # derivatives in [iman, jwoman]
             cbjacIndexVars[(i + n_thetas):(i+n_thetas+ncat_women)] = \
-                np.arange(iman*ncat_women,  (iman+1)*ncat_women)
+                n_thetas + iman*ncat_women + np.arange(ncat_women)
+            # derivatives in [jman, iwoman] except [iman, iwoman]
+            list_men = list(range(ncat_men))
+            del list_men[iman]
             cbjacIndexVars[(i + n_thetas + ncat_women):(i+n_args_jac)] = \
-                iwoman + ncat_women*np.arange(ncat_men)
+                n_thetas + iwoman + ncat_women*np.array(list_men, int)
             i += n_args_jac
 
-    KN_set_cb_grad(objGradIndexVars=KN_DENSE,
+    print(cbjacIndexCons.shape)
+    print(cbjacIndexVars.shape)
+
+    KN_set_cb_grad(kc, cb, objGradIndexVars=KN_DENSE,
                    jacIndexCons=cbjacIndexCons, jacIndexVars=cbjacIndexVars,
                    gradCallback=grad_log_likelihood_fcmnl_MPEC)
 

@@ -43,6 +43,36 @@ def print_optimization_results(kc) -> None:
     return loglik_val, x
 
 
+def print_optimization_results_MPEC(kc) -> None:
+    """
+    print results from MPEC optimization
+
+    :param kc: Knitro controller
+
+    :return: nothing
+    """
+    # get solution information.
+    nStatus, objSol, x, lambdas = KN_get_solution(kc)
+
+    print_stars(f"Knitro ended with nStatus={nStatus}")
+    print("  feasibility violation    = %e" % KN_get_abs_feas_error(kc))
+    print("  KKT optimality violation = %e" % KN_get_abs_opt_error(kc))
+
+    loglik_val = -objSol
+    print_stars()
+    print(f" value of loglikelihood: {loglik_val: > 8.3f}\n")
+    print()
+
+    print_stars("Coefficients")
+    i = 1
+    for estimate in x:
+        print(
+            f"[{i}]:  {estimate: > 10.3f}")
+        i += 1
+
+    return loglik_val, x
+
+
 def _identity_prox_h(x: np.ndarray, t: float, p: np.ndarray) -> np.ndarray:
     """ trivial proximal projector, for use in :fun:`acc_grad_descent`"""
     return x

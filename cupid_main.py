@@ -28,7 +28,7 @@ results_dir = root_dir / "Results"
 do_ChooSiow_homoskedastic = False
 do_ChooSiow_gender_heteroskedastic = False
 do_ChooSiow_gender_age_heteroskedastic = False
-do_maxi_fcmnl = True
+do_maxi_fcmnl = False
 do_maxi_fcmnl_MPEC = True
 
 # first, read the data
@@ -176,48 +176,50 @@ if do_ChooSiow_gender_age_heteroskedastic:
                     results_dir=results_dir,
                     do_stderrs=True,  varmus=varmus, save=True)
 
-if do_maxi_fcmnl:
-    for b_case in [5]:
+if do_maxi_fcmnl or do_maxi_fcmnl_MPEC:
+    for b_case in range(9):
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
         print("\n\n" + '*' * 60)
+
+        b_init = 0.3
 
         if b_case == 0:                                  # b = Identity
             pars_b_men_init = np.array([])
             pars_b_women_init = np.array([])
             make_b = make_b0
         elif b_case == 1:                                  # orders (1,0)
-            pars_b_men_init = np.full(1, 0.1)
+            pars_b_men_init = np.full(1, b_init)
             pars_b_women_init = np.array([])
             make_b = make_b1
         elif b_case == 2:                                # orders (0,1)
             pars_b_men_init = np.array([])
-            pars_b_women_init = np.full(1, 0.1)
+            pars_b_women_init = np.full(1, b_init)
             make_b = make_b2
         elif b_case == 3:                                # orders (2,0)
-            pars_b_men_init = np.full(2, 0.1)
+            pars_b_men_init = np.full(2, b_init)
             pars_b_women_init = np.array([])
             make_b = make_b3
         elif b_case == 4:                                # orders (1,1)
-            pars_b_men_init = np.full(1, 0.1)
-            pars_b_women_init = np.full(1, 0.1)
+            pars_b_men_init = np.full(1, b_init)
+            pars_b_women_init = np.full(1, b_init)
             make_b = make_b4
         elif b_case == 5:                                # orders (0,2) --- the BIC-best model
             pars_b_men_init = np.array([])
-            pars_b_women_init = np.array([0.05, 0.02])
+            pars_b_women_init = np.array([b_init, b_init])
             make_b = make_b5
         elif b_case == 6:                                # orders (2,1)
-            pars_b_men_init = np.full(2, 0.1)
-            pars_b_women_init = np.full(1, 0.1)
+            pars_b_men_init = np.full(2, b_init)
+            pars_b_women_init = np.full(1, b_init)
             make_b = make_b6
         elif b_case == 7:  # orders (1,2)
-            pars_b_men_init = np.full(1, 0.1)
-            pars_b_women_init = np.full(2, 0.1)
+            pars_b_men_init = np.full(1, b_init)
+            pars_b_women_init = np.full(2, b_init)
             make_b = make_b7
         elif b_case == 8:  #  orders (2,2)
-            pars_b_men_init = np.full(2, 0.1)
-            pars_b_women_init = np.full(2, 0.1)
+            pars_b_men_init = np.full(2, b_init)
+            pars_b_women_init = np.full(2, b_init)
             make_b = make_b8
         else:
             bs_error_abort(f"No such thing as b_case={b_case}")
@@ -232,6 +234,17 @@ if do_maxi_fcmnl:
         sigma = 0.5
         tau = 1.1
 
+        n_thetas = n_pars_b + n_bases
+
+        # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
+        estimates_homo = np.loadtxt(
+            results_dir / "homoskedastic" / "thetas.txt")
+        # they need to be rescaled
+        theta_bases_init = estimates_homo/tau
+
+        theta_init = np.zeros(n_thetas)
+        theta_init[:n_pars_b] = pars_b_init
+        theta_init[n_pars_b:] = theta_bases_init
 
         fcmnl_params_norm = CupidParamsFcmnl(men_margins=nx_norm, women_margins=my_norm,
                                              observed_matching=mu_hat_norm,
@@ -244,17 +257,6 @@ if do_maxi_fcmnl:
 
 
         if do_maxi_fcmnl:
-            # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
-            # estimates_homo = np.loadtxt(
-            #    results_dir / "homoskedastic" / "thetas.txt")
-            # they need to be rescaled
-            # x_bases_init = estimates_homo/tau
-
-            x_init = np.loadtxt("current_pars.txt")
-            x_init = x_init[2:]
-            x_init[0] = 0.05
-            x_init[1] = 0.02
-            # x_init = np.concatenate((pars_b_init, x_bases_init))
 
             n_params = n_pars_b + n_bases
 
@@ -264,34 +266,16 @@ if do_maxi_fcmnl:
             upper = np.full(n_params, inf)
             upper[:n_pars_b] = 0.5
 
-            loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, x_init,
+            loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, theta_init,
                                                                           lower=lower, upper=upper,
                                                                           checkgrad=False,
                                                                           verbose=True)
             print_stars(f"Return status: {status_fcmnl}")
 
-            analyze_results(fcmnl_params_norm, estimates_fcmnl, 
-                            "Fcmnl_b" + str(b_case),
-                            results_dir=results_dir,
-                            save=True)
-
 
         if do_maxi_fcmnl_MPEC:
-
-            n_thetas = n_pars_b + n_bases
             n_prod_categories = ncat_men*ncat_women
             n_paramsU = n_thetas + n_prod_categories
-
-            # we read the Choo and Siow homoskedastic estimates of the coefficients of the bases
-            estimates_homo = np.loadtxt(
-               results_dir / "homoskedastic" / "thetas.txt")
-            # they need to be rescaled
-            x_bases_init = estimates_homo/tau
-
-            thetas_init = np.zeros(n_thetas)
-            thetas_init[0] = 0.01
-            thetas_init[1] = 0.01
-            thetas_init[2:] = x_bases_init
 
             mu_hat = fcmnl_params_norm.observed_matching
             if mu_hat is not None:
@@ -300,7 +284,7 @@ if do_maxi_fcmnl:
                 U_hat_homo = np.log(mu_rat)
                 U_init = U_hat_homo.reshape(n_prod_categories) / tau
 
-            x_init = np.concatenate((thetas_init, U_init))
+            x_init = np.concatenate((theta_init, U_init))
 
             # bounds on pars_b_men and pars_b_women
             lower = np.full(n_paramsU, -inf)
@@ -308,9 +292,16 @@ if do_maxi_fcmnl:
             upper = np.full(n_paramsU, inf)
             upper[:n_pars_b] = 0.5
 
-            loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik_fcmnl_MPEC(fcmnl_params_norm, x_init,
-                                                                          lower=lower, upper=upper,
-                                                                          checkgrad=True,
-                                                                          verbose=True)
+            loglik_fcmnl, estimates_fcmnl_with_U, status_fcmnl \
+                = maximize_loglik_fcmnl_MPEC(fcmnl_params_norm, x_init,
+                                             lower=lower, upper=upper,
+                                             checkgrad=False, verbose=True)
+
             print_stars(f"Return status: {status_fcmnl}")
 
+            estimates_fcmnl = estimates_fcmnl_with_U[:n_thetas]
+
+        analyze_results(fcmnl_params_norm, estimates_fcmnl,
+                        "Fcmnl_b" + str(b_case),
+                        results_dir=results_dir,
+                        save=True)
