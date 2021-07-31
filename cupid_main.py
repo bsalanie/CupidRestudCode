@@ -21,7 +21,7 @@ from solve_for_mus import mus_choosiow_and_maybe_grad, \
     mus_fcmnl_and_maybe_grad_agd
 
 from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
-    make_b5, make_b6, make_b7, make_b8
+    make_b5, make_b6, make_b7, make_b8, make_b_all, make_b_interp
 
 results_dir = root_dir / "Results"
 
@@ -177,7 +177,7 @@ if do_ChooSiow_gender_age_heteroskedastic:
                     do_stderrs=True,  varmus=varmus, save=True)
 
 if do_maxi_fcmnl or do_maxi_fcmnl_MPEC:
-    for b_case in range(9):
+    for b_case in  ["_interp3"]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
@@ -221,6 +221,18 @@ if do_maxi_fcmnl or do_maxi_fcmnl_MPEC:
             pars_b_men_init = np.full(2, b_init)
             pars_b_women_init = np.full(2, b_init)
             make_b = make_b8
+        elif b_case == "_all":   # full model
+            pars_b_men_init = np.full(ncat_men, b_init)
+            pars_b_women_init = np.full(ncat_women, b_init)
+            make_b = make_b_all
+        elif b_case == "_interp3":   # linear interpolation, 3 points
+            pars_b_men_init = np.full(3, b_init)
+            pars_b_women_init = np.full(3, b_init)
+            make_b = make_b_interp
+        elif b_case == "_interp4":   # linear interpolation, 4 points
+            pars_b_men_init = np.full(4, b_init)
+            pars_b_women_init = np.full(4, b_init)
+            make_b = make_b_interp
         else:
             bs_error_abort(f"No such thing as b_case={b_case}")
 
@@ -264,7 +276,7 @@ if do_maxi_fcmnl or do_maxi_fcmnl_MPEC:
             lower = np.full(n_params, -inf)
             lower[:n_pars_b] = 0.0
             upper = np.full(n_params, inf)
-            upper[:n_pars_b] = 0.5
+            upper[:n_pars_b] = 1.5
 
             loglik_fcmnl, estimates_fcmnl, status_fcmnl = maximize_loglik(fcmnl_params_norm, theta_init,
                                                                           lower=lower, upper=upper,
@@ -290,12 +302,12 @@ if do_maxi_fcmnl or do_maxi_fcmnl_MPEC:
             lower = np.full(n_paramsU, -inf)
             lower[:n_pars_b] = 0.0
             upper = np.full(n_paramsU, inf)
-            upper[:n_pars_b] = 0.5
+            upper[:n_pars_b] = 4.0
 
             loglik_fcmnl, estimates_fcmnl_with_U, status_fcmnl \
                 = maximize_loglik_fcmnl_MPEC(fcmnl_params_norm, x_init,
                                              lower=lower, upper=upper,
-                                             checkgrad=False, verbose=True)
+                                             checkgrad=True, verbose=True)
 
             print_stars(f"Return status: {status_fcmnl}")
 

@@ -1,5 +1,4 @@
-"""
-G and H functions for FC-MNL
+""" G and H functions for FC-MNL
 """
 
 from math import log
@@ -72,6 +71,100 @@ def _b_two(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: i
         np.fill_diagonal(db[i, :, :, 0], 0.0)
         np.fill_diagonal(db[i, :, :, 1], 0.0)
     return b, db
+
+
+def _b_all(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: int) -> Tuple[np.ndarray, np.ndarray]:
+    b = np.zeros((ncat, ncat_partner, ncat_partner))
+    db = np.zeros((ncat, ncat_partner, ncat_partner, ncat))
+
+    for i in range(ncat):
+        b[i, :, :] = pars_b[i] / distances
+        db[i, :, :, i] = 1.0 / distances
+        # we need 1.0 on the diagonals, with 0 derivatives
+        np.fill_diagonal(b[i, :, :], 1.0)
+        for ipar in range(ncat):
+            np.fill_diagonal(db[i, :, :, ipar], 0.0)
+
+    return b, db
+
+
+def _b_interp3(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: int) -> Tuple[np.ndarray, np.ndarray]:
+    n_pars_b = pars_b.size
+
+    if n_pars_b == 3:
+        age_node = 8
+    else:
+        bs_error_abort(f"we use 3 points for interpolation, not {n_pars_b}")
+
+    b = np.zeros((ncat, ncat_partner, ncat_partner))
+    db = np.zeros((ncat, ncat_partner, ncat_partner, n_pars_b))
+
+    for i in range(age_node):
+        pars_i = pars_b[0] + (pars_b[1]-pars_b[0])*i/age_node
+        b[i, :, :] = pars_i / distances
+        db[i, :, :, 0] = (age_node-i)/age_node / distances
+        db[i, :, :, 1] = i / age_node / distances
+
+    for i in range(age_node, ncat):
+        pars_i = pars_b[1] \
+                 + (pars_b[2]-pars_b[1]) *(i - age_node)/(ncat-1-age_node)
+        b[i, :, :] = pars_i / distances
+        db[i, :, :, 1] = (ncat -1 -i)/(ncat-1-age_node) / distances
+        db[i, :, :, 2] = (i -age_node) / (ncat - 1 - age_node) / distances
+
+    for i in range(ncat):
+        # we need 1.0 on the diagonals, with 0 derivatives
+        np.fill_diagonal(b[i, :, :], 1.0)
+        for ipar in range(n_pars_b):
+            np.fill_diagonal(db[i, :, :, ipar], 0.0)
+
+    return b, db
+
+
+
+def _b_interp4(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: int) -> Tuple[np.ndarray, np.ndarray]:
+    n_pars_b = pars_b.size
+
+    if n_pars_b == 4:
+        age_nodes = [5, 10]
+    else:
+        bs_error_abort(f"we use 4 points for interpolation, not {n_pars_b}")
+
+    b = np.zeros((ncat, ncat_partner, ncat_partner))
+    db = np.zeros((ncat, ncat_partner, ncat_partner, n_pars_b))
+
+    for i in range(age_nodes[0]):
+        pars_i = pars_b[0] + (pars_b[1]-pars_b[0])*i/age_nodes[0]
+        b[i, :, :] = pars_i / distances
+        db[i, :, :, 0] = (age_nodes[0]-i)/age_nodes[0] / distances
+        db[i, :, :, 1] = i / age_nodes[0] / distances
+
+    for i in range(age_nodes[0], age_nodes[1]):
+        pars_i = pars_b[1] \
+                 + (pars_b[2]-pars_b[1]) \
+                 *(i - age_nodes[0])/(age_nodes[1]-age_nodes[0])
+        b[i, :, :] = pars_i / distances
+        db[i, :, :, 1] \
+            = (age_nodes[1] -i)/(age_nodes[1]-age_nodes[0]) / distances
+        db[i, :, :, 2] \
+            = (i -age_nodes[0]) / (age_nodes[1] - age_nodes[0]) / distances
+ 
+    for i in range(age_nodes[1], ncat):
+        pars_i = pars_b[2] \
+                 + (pars_b[3]-pars_b[2]) *(i - age_nodes[1])/(ncat-1-age_nodes[1])
+        b[i, :, :] = pars_i / distances
+        db[i, :, :, 2] = (ncat -1 -i)/(ncat-1-age_nodes[1]) / distances
+        db[i, :, :, 3] \
+            = (i -age_nodes[1]) / (ncat - 1 - age_nodes[1]) / distances
+
+    for i in range(ncat):
+        # we need 1.0 on the diagonals, with 0 derivatives
+        np.fill_diagonal(b[i, :, :], 1.0)
+        for ipar in range(n_pars_b):
+            np.fill_diagonal(db[i, :, :, ipar], 0.0)
+
+    return b, db
+
 
 #
 #
@@ -347,6 +440,80 @@ def make_b8(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
 
     b_men, db_men = _b_two(pars_b_men, fc_dist_women, ncat_men, ncat_women)
     b_women, db_women = _b_two(pars_b_women, fc_dist_men, ncat_women, ncat_men)
+
+    return b_men, db_men, b_women, db_women
+
+
+def make_b_all(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, ncat_women: int) \
+        -> Tuple[np.ndarray, Union[np.ndarray, None], np.ndarray, Union[np.ndarray, None]]:
+    """
+    compute b = p/fc_dist and its derivatives for both sides, 
+    orders (ncat_men, ncat_women)
+
+    :param np.ndarray pars_b_men: parameters of b for men
+
+    :param np.ndarray pars_b_women: parameters of b for women
+
+    :param int ncat_men: number of categories of men
+
+    :param int ncat_women: number of categories of women
+
+    :return: values and first derivatives of b for each (x,y,t) or (y,x,z)
+    """
+    n_pars_b_men, n_pars_b_women = pars_b_men.size, pars_b_women.size
+
+    if n_pars_b_men != ncat_men:
+        bs_error_abort(f"we need n_pars_b_men = {ncat_men} not {n_pars_b_men}")
+    if n_pars_b_women != ncat_women:
+        bs_error_abort(f"we need n_pars_b_women = {ncat_women} not {n_pars_b_women}")
+
+    fc_dist_men = fc_dist(ncat_men)
+    fc_dist_women = fc_dist(ncat_women)
+
+    b_men, db_men = _b_all(pars_b_men, fc_dist_women, ncat_men, ncat_women)
+    b_women, db_women = _b_all(pars_b_women, fc_dist_men, ncat_women, ncat_men)
+
+    return b_men, db_men, b_women, db_women
+
+
+def make_b_interp(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, ncat_women: int) \
+        -> Tuple[np.ndarray, Union[np.ndarray, None], np.ndarray, Union[np.ndarray, None]]:
+    """
+    compute b = p/fc_dist and its derivatives for both sides, 
+    with linear interpolation
+
+    :param np.ndarray pars_b_men: parameters of b for men
+
+    :param np.ndarray pars_b_women: parameters of b for women
+
+    :param int ncat_men: number of categories of men
+
+    :param int ncat_women: number of categories of women
+
+    :return: values and first derivatives of b for each (x,y,t) or (y,x,z)
+    """
+    n_pars_b_men, n_pars_b_women = pars_b_men.size, pars_b_women.size
+
+    fc_dist_men = fc_dist(ncat_men)
+    fc_dist_women = fc_dist(ncat_women)
+
+    if n_pars_b_men == 3:
+        _b_interp_men = _b_interp3
+    elif n_pars_b_men == 4:
+        _b_interp_men = _b_interp4
+    else:
+        bs_error_abort(f"only use 3 or 4 points for interpolation, not {n_pars_b_men}")
+
+
+    if n_pars_b_women == 3:
+        _b_interp_women = _b_interp3
+    elif n_pars_b_women == 4:
+        _b_interp_women = _b_interp4
+    else:
+        bs_error_abort(f"only use 3 or 4 points for interpolation, not {n_pars_b_women}")
+
+    b_men, db_men = _b_interp_men(pars_b_men, fc_dist_women, ncat_men, ncat_women)
+    b_women, db_women = _b_interp_women(pars_b_women, fc_dist_men, ncat_women, ncat_men)
 
     return b_men, db_men, b_women, db_women
 
