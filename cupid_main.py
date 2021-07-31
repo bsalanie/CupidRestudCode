@@ -25,11 +25,11 @@ from fcmnl import make_b0, make_b1, make_b2, make_b3, make_b4, \
 
 results_dir = root_dir / "Results"
 
-do_ChooSiow_homoskedastic = False
-do_ChooSiow_gender_heteroskedastic = False
-do_ChooSiow_gender_age_heteroskedastic = False
+do_ChooSiow_homoskedastic = True
+do_ChooSiow_gender_heteroskedastic = True
+do_ChooSiow_gender_age_heteroskedastic = True
 do_maxi_fcmnl = False
-do_maxi_fcmnl_MPEC = True
+do_maxi_fcmnl_MPEC = False
 
 # first, read the data
 data_dir = root_dir / "Data" / "Output"
