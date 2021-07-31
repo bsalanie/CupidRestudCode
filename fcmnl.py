@@ -32,14 +32,16 @@ def fc_dist(ncat_partner: int) -> np.ndarray:
 #  each _b_XX function fills the b matrix and its derivatives: with 0, 1, 2 parameters
 #
 #
-def _b_zero(ncat: int, ncat_partner: int) -> np.ndarray:
+def _b_zero(pars_b: np.ndarray, distances: np.ndarray,
+            ncat: int, ncat_partner: int) -> Tuple[np.ndarray, np.ndarray]:
     b = np.zeros((ncat, ncat_partner, ncat_partner))
     for i in range(ncat):
         np.fill_diagonal(b[i, :, :], 1.0)
-    return b
+    return b, None
 
 
-def _b_one(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partner: int) -> Tuple[np.ndarray, np.ndarray]:
+def _b_one(pars_b: np.ndarray, distances: np.ndarray,
+           ncat: int, ncat_partner: int) -> Tuple[np.ndarray, np.ndarray]:
     par_b0 = pars_b[0]
     b = np.zeros((ncat, ncat_partner, ncat_partner))
     db = np.zeros((ncat, ncat_partner, ncat_partner, 1))
@@ -92,7 +94,7 @@ def _b_interp3(pars_b: np.ndarray, distances: np.ndarray, ncat: int, ncat_partne
     n_pars_b = pars_b.size
 
     if n_pars_b == 3:
-        age_node = 8
+        age_node = 5
     else:
         bs_error_abort(f"we use 3 points for interpolation, not {n_pars_b}")
 
@@ -194,8 +196,8 @@ def make_b0(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
     if n_pars_b_women != 0:
         bs_error_abort(f"we need n_pars_b_women = 0 not {n_pars_b_women}")
 
-    b_men = _b_zero(ncat_men, ncat_women)
-    b_women = _b_zero(ncat_women, ncat_men)
+    b_men, _ = _b_zero(pars_b_men, fc_dist_women, ncat_men, ncat_women)
+    b_women, _ = _b_zero(pars_b_women, fc_dist_men, ncat_women, ncat_men)
 
     return b_men, None, b_women, None
 
@@ -225,7 +227,7 @@ def make_b1(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
     fc_dist_women = fc_dist(ncat_women)
 
     b_men, db_men = _b_one(pars_b_men, fc_dist_women, ncat_men, ncat_women)
-    b_women = _b_zero(ncat_women, ncat_men)
+    b_women, _ = _b_zero(pars_b_women, fc_dist_men, ncat_women, ncat_men)
 
     return b_men, db_men, b_women, None
 
@@ -255,7 +257,7 @@ def make_b2(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
     fc_dist_men = fc_dist(ncat_men)
 
     b_women, db_women = _b_one(pars_b_women, fc_dist_men, ncat_women, ncat_men)
-    b_men = _b_zero(ncat_men, ncat_women)
+    b_men, _ = _b_zero(pars_b_men, fc_dist_men, ncat_men, ncat_women)
 
     return b_men, None, b_women, db_women
 
@@ -285,7 +287,7 @@ def make_b3(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
     fc_dist_women = fc_dist(ncat_women)
 
     b_men, db_men = _b_two(pars_b_men, fc_dist_women, ncat_men, ncat_women)
-    b_women = _b_zero(ncat_women, ncat_men)
+    b_women, _ = _b_zero(pars_b_women, fc_dist_men, ncat_women, ncat_men)
 
     return b_men, db_men, b_women, None
 
@@ -345,7 +347,7 @@ def make_b5(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: int, nca
 
     fc_dist_men = fc_dist(ncat_men)
 
-    b_men = _b_zero(ncat_men, ncat_women)
+    b_men, _ = _b_zero(pars_b_men, fc_dist_women, ncat_men, ncat_women)
     b_women, db_women = _b_two(pars_b_women, fc_dist_men, ncat_women, ncat_men)
 
     return b_men, None, b_women, db_women
@@ -497,20 +499,20 @@ def make_b_interp(pars_b_men: np.ndarray, pars_b_women: np.ndarray, ncat_men: in
     fc_dist_men = fc_dist(ncat_men)
     fc_dist_women = fc_dist(ncat_women)
 
-    if n_pars_b_men == 3:
-        _b_interp_men = _b_interp3
-    elif n_pars_b_men == 4:
-        _b_interp_men = _b_interp4
-    else:
-        bs_error_abort(f"only use 3 or 4 points for interpolation, not {n_pars_b_men}")
+    def choose_b(n_pars):
+        if n_pars == 0:
+            chosen_b = _b_zero
+        elif n_pars == 3:
+            chosen_b = _b_interp3
+        elif n_pars == 4:
+            chosen_b = _b_interp4
+        else:
+            bs_error_abort(f"only 0 or 3 or 4 points for interpolation, not {n_pars}")
+        return chosen_b
 
 
-    if n_pars_b_women == 3:
-        _b_interp_women = _b_interp3
-    elif n_pars_b_women == 4:
-        _b_interp_women = _b_interp4
-    else:
-        bs_error_abort(f"only use 3 or 4 points for interpolation, not {n_pars_b_women}")
+    _b_interp_men = choose_b(n_pars_b_men)
+    _b_interp_women = choose_b(n_pars_b_women)
 
     b_men, db_men = _b_interp_men(pars_b_men, fc_dist_women, ncat_men, ncat_women)
     b_women, db_women = _b_interp_women(pars_b_women, fc_dist_men, ncat_women, ncat_men)

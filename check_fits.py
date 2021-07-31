@@ -37,7 +37,7 @@ print(fits_heteroxy-fits_homo)
 fits_fcmnl0 = make_fits(np.loadtxt(results_dir / f"Fcmnl_b0" / "fits.txt"))
 
 
-for b_case in ["_interp3", "_interp4"]:
+for b_case in ["_interp3", "_interp4", "_interp3_0", "_interp3_0_5"]:
     fits_fcmnl = make_fits(np.loadtxt(
         results_dir / f"Fcmnl_b{b_case}" / "fits.txt"))
 

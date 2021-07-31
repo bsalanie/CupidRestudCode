@@ -177,7 +177,7 @@ if do_ChooSiow_gender_age_heteroskedastic:
                     do_stderrs=True,  varmus=varmus, save=True)
 
 if do_maxi_fcmnl or do_maxi_fcmnl_MPEC:
-    for b_case in  ["_interp3"]:
+    for b_case in  ["_interp3_0_5"]:
 
         print("\n\n" + '*' * 60)
         print(f"\n\n now we estimate an FC-MNL model, case {b_case}")
@@ -232,6 +232,14 @@ if do_maxi_fcmnl or do_maxi_fcmnl_MPEC:
         elif b_case == "_interp4":   # linear interpolation, 4 points
             pars_b_men_init = np.full(4, b_init)
             pars_b_women_init = np.full(4, b_init)
+            make_b = make_b_interp
+        elif b_case == "_interp3_0_5":   # linear interpolation, 3 men points
+            pars_b_men_init = np.full(3, b_init)
+            pars_b_women_init = np.array([])
+            make_b = make_b_interp
+        elif b_case == "_interp4_0":   # linear interpolation, 4 men points
+            pars_b_men_init = np.full(4, b_init)
+            pars_b_women_init = np.array([])
             make_b = make_b_interp
         else:
             bs_error_abort(f"No such thing as b_case={b_case}")
@@ -315,5 +323,6 @@ if do_maxi_fcmnl or do_maxi_fcmnl_MPEC:
 
         analyze_results(fcmnl_params_norm, estimates_fcmnl,
                         "Fcmnl_b" + str(b_case),
+                        do_stderrs=True, varmus=varmus,
                         results_dir=results_dir,
                         save=True)
